@@ -120,6 +120,10 @@ Content-Type: application/json
 
 本项目仅供学习和研究使用。
 
+## 交流群
+
+![](assets/image-20260123114132975.png)
+
 ## 相关链接
 
 - [java-decompiler-mcp](https://github.com/RuoJi6/java-decompiler-mcp) - Java 反编译 MCP 服务
