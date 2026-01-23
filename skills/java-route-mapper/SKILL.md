@@ -120,23 +120,23 @@ Content-Type: application/json
 
 ```bash
 # 检查 CFR 反编译器状态
-mcp__java-decompiler-mcp__check_cfr_status()
+mcp__java-decompile-mcp__check_cfr_status()
 
 # 获取当前系统的 Java 版本信息
-mcp__java-decompiler-mcp__get_java_version()
+mcp__java-decompile-mcp__get_java_version()
 
 # 下载 CFR 反编译器到指定目录
-mcp__java-decompiler-mcp__download_cfr_tool(target_dir)
+mcp__java-decompile-mcp__download_cfr_tool(target_dir)
 
 # 反编译单个 .class 或 .jar 文件
-mcp__java-decompiler-mcp__decompile_file(
+mcp__java-decompile-mcp__decompile_file(
   file_path,
   output_dir,      # 输出目录，默认为文件所在目录下的 decompiled 文件夹
   save_to_file     # 是否直接保存到文件系统(推荐)，默认为 True。设为 False 时会返回反编译内容
 )
 
 # 反编译指定目录下的所有 .class 和 .jar 文件(支持多线程)
-mcp__java-decompiler-mcp__decompile_directory(
+mcp__java-decompile-mcp__decompile_directory(
   directory_path,
   output_dir,      # 输出目录，默认为目标目录下的 decompiled 文件夹
   recursive,       # 是否递归扫描子目录，默认为 True
@@ -146,7 +146,7 @@ mcp__java-decompiler-mcp__decompile_directory(
 )
 
 # 反编译多个 .class 或 .jar 文件(支持多线程)
-mcp__java-decompiler-mcp__decompile_files(
+mcp__java-decompile-mcp__decompile_files(
   file_paths,
   output_dir,      # 输出目录，默认为当前目录下的 decompiled 文件夹
   save_to_file,    # 是否直接保存到文件系统(推荐)，默认为 True

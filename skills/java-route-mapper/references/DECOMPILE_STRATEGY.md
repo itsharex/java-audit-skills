@@ -41,7 +41,7 @@
 
 ```python
 # 反编译单个 .class 文件
-mcp__java-decompiler__decompile_file(
+mcp__java-decompile-mcp__decompile_file(
     file_path="/path/to/MyController.class",
     output_dir="/path/to/output"  # 可选，默认为 ./decompiled
 )
@@ -51,7 +51,7 @@ mcp__java-decompiler__decompile_file(
 
 ```python
 # 递归反编译整个目录
-mcp__java-decompiler__decompile_directory(
+mcp__java-decompile-mcp__decompile_directory(
     directory_path="/path/to/classes",
     output_dir="/path/to/output",
     recursive=True
@@ -62,7 +62,7 @@ mcp__java-decompiler__decompile_directory(
 
 ```python
 # 反编译多个文件
-mcp__java-decompiler__decompile_files(
+mcp__java-decompile-mcp__decompile_files(
     file_paths=[
         "/path/to/UserController.class",
         "/path/to/ProductController.class",
@@ -216,7 +216,7 @@ new Comparator() {
 **解决方案：**
 ```python
 # 检查 Java 版本
-mcp__java-decompiler__get_java_version()
+mcp__java-decompile-mcp__get_java_version()
 
 # 尝试使用不同的反编译器
 # 或记录为"无法反编译"

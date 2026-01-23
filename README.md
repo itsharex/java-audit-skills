@@ -13,7 +13,7 @@
 
 ## 前置要求
 
-在使用之前需要安装 [java-decompiler-mcp](https://github.com/RuoJi6/java-decompiler-mcp) MCP 服务，该服务提供 Java 反编译能力，用于分析已编译的 Java 文件。
+在使用之前需要安装 [java-decompile-mcp](https://github.com/RuoJi6/java-decompile-mcp) MCP 服务，该服务提供 Java 反编译能力，用于分析已编译的 Java 文件。
 
 ## 目录结构
 
@@ -89,8 +89,8 @@ Content-Type: application/json
 ### 1. 安装 MCP Java Decompiler
 
 ```bash
-# 按照 java-decompiler-mcp 仓库说明进行安装
-# https://github.com/RuoJi6/java-decompiler-mcp
+# 按照 java-decompile-mcp 仓库说明进行安装
+# https://github.com/RuoJi6/java-decompile-mcp
 ```
 
 ### 2. 配置 Skills
@@ -126,5 +126,5 @@ Content-Type: application/json
 
 ## 相关链接
 
-- [java-decompiler-mcp](https://github.com/RuoJi6/java-decompiler-mcp) - Java 反编译 MCP 服务
+- [java-decompile-mcp](https://github.com/RuoJi6/java-decompile-mcp) - Java 反编译 MCP 服务
 - [Claude Code](https://claude.ai/claude-code) - Claude CLI 工具
