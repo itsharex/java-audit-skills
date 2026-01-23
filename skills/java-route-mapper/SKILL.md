@@ -119,14 +119,40 @@ Content-Type: application/json
 ### MCP Java Decompiler
 
 ```bash
-# 反编译单个文件
-mcp__java-decompiler__decompile_file(file_path)
+# 检查 CFR 反编译器状态
+mcp__java-decompiler-mcp__check_cfr_status()
 
-# 反编译目录
-mcp__java-decompiler__decompile_directory(directory_path, recursive=true)
+# 获取当前系统的 Java 版本信息
+mcp__java-decompiler-mcp__get_java_version()
 
-# 反编译多个文件
-mcp__java-decompiler__decompile_files(file_paths)
+# 下载 CFR 反编译器到指定目录
+mcp__java-decompiler-mcp__download_cfr_tool(target_dir)
+
+# 反编译单个 .class 或 .jar 文件
+mcp__java-decompiler-mcp__decompile_file(
+  file_path,
+  output_dir,      # 输出目录，默认为文件所在目录下的 decompiled 文件夹
+  save_to_file     # 是否直接保存到文件系统(推荐)，默认为 True。设为 False 时会返回反编译内容
+)
+
+# 反编译指定目录下的所有 .class 和 .jar 文件(支持多线程)
+mcp__java-decompiler-mcp__decompile_directory(
+  directory_path,
+  output_dir,      # 输出目录，默认为目标目录下的 decompiled 文件夹
+  recursive,       # 是否递归扫描子目录，默认为 True
+  save_to_file,    # 是否直接保存到文件系统(推荐)，默认为 True
+  show_progress,   # 是否显示详细进度信息，默认为 True
+  max_workers      # 最大并发线程数，默认为 4(设为 1 则单线程处理)
+)
+
+# 反编译多个 .class 或 .jar 文件(支持多线程)
+mcp__java-decompiler-mcp__decompile_files(
+  file_paths,
+  output_dir,      # 输出目录，默认为当前目录下的 decompiled 文件夹
+  save_to_file,    # 是否直接保存到文件系统(推荐)，默认为 True
+  show_progress,   # 是否显示详细进度信息，默认为 True
+  max_workers      # 最大并发线程数，默认为 4(设为 1 则单线程处理)
+)
 ```
 
 ## 限制与边界
