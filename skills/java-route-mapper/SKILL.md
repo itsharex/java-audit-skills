@@ -18,6 +18,370 @@ description: Java Web 源码路由与参数映射分析工具。从源码中提�
 - ❌ 禁止只输出"关键接口"或"重要接口"
 - ❌ 禁止因为数量大而省略
 
+---
+
+## ⚠️ CRITICAL 规则汇总（强制执行）
+
+**以下规则为强制性要求，违反任何一条都会导致输出不合格。**
+
+---
+
+### CRITICAL 1: 通配符/动态路由强制展开
+
+#### 1.1 Struts2 通配符路由
+
+**适用场景：** struts.xml 中存在以下通配符配置时必须强制展开
+- `name="*_*"` - 双通配符
+- `name="user_*"` - 单通配符
+- `name="*"` - 全匹配
+
+**强制执行步骤（不可跳过）：**
+
+1. **识别通配符配置**
+   ```xml
+   <action name="*_*" class="{1}Action" method="{2}">
+   ```
+
+2. **反编译该 namespace 下所有 Action 类**
+   ```bash
+   mcp__java-decompile-mcp__decompile_directory(
+       directory_path="{WEB-INF/classes/对应包路径}",
+       recursive=true,
+       save_to_file=true
+   )
+   ```
+
+3. **提取每个 Action 类的业务方法**
+   - 所有 public 方法
+   - 排除：getter/setter（get*/set*/is*）
+   - 排除：继承自 ActionSupport 的方法（execute 除外）
+   - 保留：所有其他 public 方法
+
+4. **生成路由映射表并为每个路由生成独立请求模板**
+
+#### 1.2 Spring MVC 路径变量
+
+**适用场景：** `@RequestMapping` 中存在路径变量时
+- `@GetMapping("/user/{id}")` - 路径变量
+- `@RequestMapping("/api/{version}/**")` - 通配符路径
+
+**强制执行步骤：**
+
+1. **识别路径变量模式**
+   ```java
+   @GetMapping("/user/{id}/orders/{orderId}")
+   ```
+
+2. **为每个路径变量生成占位符说明**
+   ```markdown
+   Path 变量:
+   - {id}: 用户ID (类型: Long)
+   - {orderId}: 订单ID (类型: String)
+   ```
+
+3. **在 Burp 模板中使用 `{{变量名}}` 格式**
+
+#### 1.3 JAX-RS 路径参数
+
+**适用场景：** `@Path` 注解中存在路径参数时
+- `@Path("/users/{userId}")` - 路径参数
+- `@Path("{resource}/{id}")` - 多级路径参数
+
+**强制执行步骤：**
+
+1. **识别 `@PathParam` 注解**
+   ```java
+   @GET
+   @Path("/{userId}/profile")
+   public User getProfile(@PathParam("userId") Long userId)
+   ```
+
+2. **提取参数类型并生成完整模板**
+
+#### 1.4 Servlet URL Pattern 通配符
+
+**适用场景：** web.xml 或 `@WebServlet` 中存在通配符时
+- `<url-pattern>/api/*</url-pattern>` - 路径通配符
+- `<url-pattern>*.do</url-pattern>` - 扩展名通配符
+
+**强制执行步骤：**
+
+1. **分析 Servlet 类的 doGet/doPost 方法**
+2. **提取 `request.getPathInfo()` 或 `request.getServletPath()` 的使用方式**
+3. **根据代码逻辑推断可能的子路径**
+
+---
+
+### CRITICAL 2: Web Service 方法完整输出规则
+
+#### 2.1 配置文件优先原则
+
+**Web Service 的 URL 路径必须从配置文件中读取，绝对不能根据类名或 endpoint id 推断！**
+
+**解析优先级（按顺序执行）：**
+
+1. **读取配置文件** - applicationContext.xml 或其他 Spring 配置
+2. **提取 address 属性** - 这是 Web Service 路径的唯一真实来源
+3. **验证 Servlet 映射** - 从 web.xml 获取 /ws/* 或 /services/*
+4. **组装完整 URL** - 上下文路径 + Servlet映射 + address
+5. **反编译实现类** - 仅用于提取方法签名，不用于推断路径
+
+**URL 组成公式：**
+```
+完整URL = 上下文路径 + web.xml中的Servlet映射 + address属性值
+
+示例: /myapp + /services/ + /UserApi = /myapp/services/UserApi
+```
+
+**错误示例（必须避免）：**
+- ❌ 根据类名推断: `UserServiceImpl` → `/UserService`
+- ❌ 根据 id 推断: `userWebService` → `/userWebService`
+- ✅ 读取配置: `address="/UserApi"` → `/myapp/services/UserApi`
+
+#### 2.2 CXF/JAX-WS 服务
+
+**强制执行步骤：**
+
+1. **从配置文件获取所有 endpoint**
+   ```xml
+   <jaxws:endpoint id="userService"
+                   implementor="#userServiceImpl"
+                   address="/UserService"/>
+   ```
+
+2. **反编译每个 Service 实现类**
+
+3. **提取所有 public 方法** - 方法名、参数列表、返回类型
+
+4. **为每个方法生成独立 SOAP 请求模板**
+
+5. **记录配置来源** - 配置文件路径、行号、address 属性值、implementor 类名
+
+#### 2.3 Axis/Axis2 服务
+
+**强制执行步骤：**
+
+1. **读取 server-config.wsdd 或 services.xml**
+   ```xml
+   <service name="UserService" provider="java:RPC">
+     <parameter name="className" value="com.example.UserService"/>
+   </service>
+   ```
+
+2. **提取服务名和实现类**
+
+3. **反编译实现类获取方法列表**
+
+4. **URL 组成：** `/axis/services/{serviceName}`
+
+#### 2.4 executeInterface 类型服务特殊处理
+
+对于使用 interfaceId 参数路由的通用执行接口：
+
+1. **反编译实现类，查找所有 interfaceId 定义**
+2. **为每个 interfaceId 生成独立请求模板**
+
+---
+
+### CRITICAL 3: 禁止的输出格式
+
+**以下输出格式绝对禁止使用：**
+
+| 禁止模式 | 错误示例 | 正确做法 |
+|:---------|:---------|:---------|
+| 使用"等"省略 | `LoginAction, UserAction等` | 列出全部 Action |
+| 使用"..."省略 | `method1, method2, ...` | 列出全部方法 |
+| 使用"其他"省略 | `以及其他20个方法` | 列出全部20个方法 |
+| 使用"更多"省略 | `更多接口请查看源码` | 直接列出所有接口 |
+| 使用占位符 | `{action}_{method}.action` | 展开为实际 URL |
+| 使用范围表示 | `001 ~ 050` | 逐个列出 001, 002, ..., 050 |
+| 描述替代列表 | `方法列表: 用户管理相关` | 列出具体方法名 |
+| 只给 WSDL 地址 | `请通过 WSDL 查看可用方法` | 列出所有 SOAP 方法 |
+| 只列类名不列方法 | `UserAction 支持多个方法` | 列出每个方法的完整模板 |
+
+---
+
+### CRITICAL 4: 各框架必须的输出格式
+
+#### 4.1 Struts2 路由
+
+```markdown
+=== [1] login_login.action ===
+URL: `/admin/login_login.action`
+方法: LoginAction.login()
+参数: loginName (String), password (String)
+
+Burp Suite 请求模板:
+\```http
+POST /admin/login_login.action HTTP/1.1
+Host: {{host}}
+Content-Type: application/x-www-form-urlencoded
+
+loginName={{username}}&password={{password}}
+\```
+```
+
+#### 4.2 Spring MVC 路由
+
+```markdown
+=== [1] GET /api/users/{id} ===
+位置: UserController.getUser (UserController.java:45)
+HTTP 方法: GET
+URL 路径: /api/users/{id}
+
+参数结构:
+  Path: {id} (Long) - 用户ID
+  Header: Authorization - Bearer Token
+
+Burp Suite 请求模板:
+\```http
+GET /api/users/{{userId}} HTTP/1.1
+Host: {{host}}
+Authorization: Bearer {{token}}
+\```
+```
+
+#### 4.3 JAX-RS 路由
+
+```markdown
+=== [1] GET /rest/users/{userId} ===
+位置: UserResource.getUser (UserResource.java:32)
+HTTP 方法: GET
+URL 路径: /rest/users/{userId}
+
+参数结构:
+  Path: {userId} (Long)
+  Query: includeOrders (boolean, 可选)
+
+Burp Suite 请求模板:
+\```http
+GET /rest/users/{{userId}}?includeOrders=true HTTP/1.1
+Host: {{host}}
+Accept: application/json
+\```
+```
+
+#### 4.4 Servlet 路由
+
+```markdown
+=== [1] POST /api/upload ===
+位置: UploadServlet.doPost (UploadServlet.java:28)
+HTTP 方法: POST
+URL 路径: /api/upload
+
+参数结构:
+  Body: multipart/form-data
+    - file (File) - 上传文件
+    - description (String) - 文件描述
+
+Burp Suite 请求模板:
+\```http
+POST /api/upload HTTP/1.1
+Host: {{host}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+{{fileContent}}
+------WebKitFormBoundary
+Content-Disposition: form-data; name="description"
+
+{{description}}
+------WebKitFormBoundary--
+\```
+```
+
+#### 4.5 Web Service (SOAP) 方法
+
+```markdown
+### UserService (共 5 个方法)
+
+- **配置文件**: applicationContext.xml:42
+- **address 属性**: /UserApi
+- **完整 URL**: /myapp/services/UserApi
+
+=== [WS-1] login ===
+方法签名: login(String loginName, String password)
+返回类型: String
+
+Burp Suite 请求模板:
+\```http
+POST /myapp/services/UserApi HTTP/1.1
+Host: {{host}}
+Content-Type: text/xml; charset=utf-8
+SOAPAction: ""
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:web="http://webservice.example.com">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <web:login>
+      <loginName>{{username}}</loginName>
+      <password>{{password}}</password>
+    </web:login>
+  </soapenv:Body>
+</soapenv:Envelope>
+\```
+```
+
+---
+
+### CRITICAL 5: 输出前强制验证
+
+**此验证必须通过才能写入文件，验证不通过时必须返回补充内容。**
+
+#### 5.1 数量一致性检查
+
+| 检查项 | 计算公式 | 通过条件 |
+|:-------|:---------|:---------|
+| Struts2 路由 | 实际模板数 ÷ Action类数 | ≥ 3 |
+| Spring MVC 接口 | 实际模板数 ÷ Controller类数 | ≥ 2 |
+| JAX-RS 接口 | 实际模板数 ÷ Resource类数 | ≥ 2 |
+| Servlet 接口 | 实际模板数 ÷ Servlet类数 | ≥ 1 |
+| Web Service 方法 | 实际模板数 ÷ 反编译获得的方法数 | = 100% |
+
+#### 5.2 省略词检测
+
+扫描输出内容，检测到任何省略标志时必须替换为完整内容。
+
+#### 5.3 文件完整性检查
+
+- [ ] 主索引中每个模块都有对应的详情文件
+- [ ] 每个详情文件都包含完整的请求模板（不是摘要）
+- [ ] Web Service 索引中的每个服务都有完整的方法列表
+- [ ] 没有"详见xxx"但 xxx 文件不存在的情况
+
+#### 5.4 验证不通过时的处理流程
+
+1. 停止当前输出
+2. 识别缺失的内容类型
+3. 执行反编译获取完整信息
+4. 补充缺失的请求模板
+5. 重新执行验证
+6. 验证通过后才写入文件
+
+---
+
+### CRITICAL 6: 完成性检查清单
+
+**在标记任务完成前，必须执行以下检查：**
+
+- [ ] 主索引文件已生成
+- [ ] README说明文档已生成
+- [ ] 主索引中列出的每个模块都有对应的详情文件
+- [ ] 每个详情文件都包含完整的路由信息（或明确说明无路由）
+- [ ] 所有文件链接可访问
+- [ ] 已通过验证命令检查
+
+**如果发现缺失文件，必须：**
+1. 立即补充缺失的文件
+2. 更新主索引（如果链接不匹配）
+3. 重新执行完整性检查
+
+---
+
 ## 工作流程
 
 ### 1. 项目分析初始化
@@ -97,304 +461,6 @@ description: Java Web 源码路由与参数映射分析工具。从源码中提�
 - 仅反编译包含目标接口或参数定义的类
 - 优先使用已存在的源码
 - 记录反编译来源以便追溯
-
----
-
-## ⚠️ Struts2 通配符路由强制展开（CRITICAL）
-
-### 适用场景
-
-当 struts.xml 中存在以下通配符配置时，必须执行强制展开：
-- `name="*_*"` - 双通配符
-- `name="user_*"` - 单通配符
-- `name="*"` - 全匹配
-
-### 强制执行步骤（不可跳过）
-
-**步骤 1：识别通配符配置**
-```xml
-<!-- 示例：检测到此类配置 -->
-<action name="*_*" class="{1}Action" method="{2}">
-```
-
-**步骤 2：反编译该 namespace 下所有 Action 类**
-```bash
-# 必须执行，不允许跳过
-mcp__java-decompile-mcp__decompile_directory(
-    directory_path="{WEB-INF/classes/对应包路径}",
-    recursive=true,
-    save_to_file=true
-)
-```
-
-**步骤 3：提取每个 Action 类的业务方法**
-
-从反编译结果中提取：
-- 所有 public 方法
-- 排除：getter/setter（get*/set*/is*）
-- 排除：继承自 ActionSupport 的方法（execute 除外）
-- 保留：所有其他 public 方法
-
-**步骤 4：生成路由映射表**
-
-| Action 类 | 方法 | 完整 URL |
-|:----------|:-----|:---------|
-| LoginAction | login | /admin/login_login.action |
-| LoginAction | logout | /admin/login_logout.action |
-| UserAction | list | /admin/user_list.action |
-| UserAction | add | /admin/user_add.action |
-| ... | ... | ... |
-
-**步骤 5：为每个路由生成独立请求模板**
-
-### 禁止的输出格式
-
-❌ **错误示例 1**：使用占位符
-```markdown
-URL: `/admin/{action}_{method}.action`
-支持的Action: LoginAction, UserAction, DeviceAction等
-```
-
-❌ **错误示例 2**：使用"等"省略
-```markdown
-支持的方法: list, add, edit, delete等
-```
-
-❌ **错误示例 3**：只列出类名不列出方法
-```markdown
-### UserAction
-该Action支持多个方法，包括用户管理相关操作。
-```
-
-### 必须的输出格式
-
-✅ **正确示例**：每个路由独立条目
-```markdown
-=== [1] login_login.action ===
-URL: `/admin/login_login.action`
-方法: LoginAction.login()
-参数: loginName (String), password (String)
-
-Burp Suite 请求模板:
-\```http
-POST /admin/login_login.action HTTP/1.1
-Host: {{host}}
-Content-Type: application/x-www-form-urlencoded
-
-loginName={{username}}&password={{password}}
-\```
-
-=== [2] login_logout.action ===
-URL: `/admin/login_logout.action`
-方法: LoginAction.logout()
-...
-```
-
----
-
-## ⚠️ Web Service 方法完整输出规则（CRITICAL）
-
-### 强制执行步骤
-
-**步骤 1：从配置文件获取所有 endpoint**
-```xml
-<jaxws:endpoint id="userService"
-                implementor="#userServiceImpl"
-                address="/UserService"/>
-```
-
-**步骤 2：反编译每个 Service 实现类**
-```bash
-mcp__java-decompile-mcp__decompile_file(
-    file_path="{实现类.class路径}",
-    save_to_file=true
-)
-```
-
-**步骤 3：提取所有 public 方法**
-
-从反编译结果中提取：
-- 方法名
-- 参数列表（名称 + 类型）
-- 返回类型
-
-**步骤 4：为每个方法生成独立 SOAP 请求模板**
-
-### 禁止的输出格式
-
-❌ **错误示例 1**：只给描述不给方法列表
-```markdown
-### FaceInfoService
-**方法列表**: 人脸识别、人脸查询等相关功能
-```
-
-❌ **错误示例 2**：使用范围表示
-```markdown
-**可用的interfaceId**: admin_001_001 ~ admin_001_050 (共50个)
-```
-
-❌ **错误示例 3**：只给 WSDL 地址
-```markdown
-### UserService
-WSDL: /admin/services/UserService?wsdl
-请通过 WSDL 查看可用方法。
-```
-
-### 必须的输出格式
-
-✅ **正确示例**：每个方法独立条目
-```markdown
-### UserService (共 5 个方法)
-
-=== [WS-1] login ===
-方法签名: login(String loginName, String password)
-返回类型: String
-
-Burp Suite 请求模板:
-\```http
-POST /admin/services/UserService HTTP/1.1
-Host: {{host}}
-Content-Type: text/xml; charset=utf-8
-SOAPAction: ""
-
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                  xmlns:web="http://webservice.example.com">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <web:login>
-      <loginName>{{username}}</loginName>
-      <password>{{password}}</password>
-    </web:login>
-  </soapenv:Body>
-</soapenv:Envelope>
-\```
-
-=== [WS-2] logout ===
-方法签名: logout(String sessionId)
-...
-
-=== [WS-3] getUserInfo ===
-...
-```
-
-### executeInterface 类型服务特殊处理
-
-对于使用 interfaceId 参数路由的通用执行接口：
-
-**步骤 1：反编译实现类，查找所有 interfaceId 定义**
-
-**步骤 2：为每个 interfaceId 生成独立请求模板**
-
-```markdown
-=== [WS-1] admin_001_001 - 查询设备 ===
-interfaceId: admin_001_001
-功能: queryDevice
-参数: {"deviceId": "...", "orgId": "..."}
-
-Burp Suite 请求模板:
-\```http
-POST /admin/services/AdminWebService HTTP/1.1
-...
-<web:executeInterface>
-  <interfaceId>admin_001_001</interfaceId>
-  <jsonParam>{"deviceId":"{{deviceId}}","orgId":"{{orgId}}"}</jsonParam>
-</web:executeInterface>
-\```
-
-=== [WS-2] admin_001_002 - 添加设备 ===
-...
-```
-
----
-
-**Web Service (CXF/JAX-WS) 特殊处理：**
-
-⚠️ **CRITICAL: 配置文件优先原则**
-
-**Web Service 的 URL 路径必须从配置文件中读取，绝对不能根据类名或 endpoint id 推断！**
-
-参考文档: [WEBSERVICE.md](references/WEBSERVICE.md)
-
-**解析优先级（按顺序执行）：**
-
-1. **读取配置文件** - applicationContext.xml 或其他 Spring 配置
-2. **提取 address 属性** - 这是 Web Service 路径的唯一真实来源
-3. **验证 Servlet 映射** - 从 web.xml 获取 /ws/* 或 /services/*
-4. **组装完整 URL** - 上下文路径 + Servlet映射 + address
-5. **反编译实现类** - 仅用于提取方法签名，不用于推断路径
-
-**详细步骤：**
-
-1. **必须读取 applicationContext.xml 配置文件**
-   ```bash
-   # 查找配置文件
-   find {project_path} -name "applicationContext*.xml"
-   ```
-
-2. **解析 <jaxws:endpoint> 配置**
-   ```xml
-   <jaxws:endpoint id="userWebService"
-                   implementor="#userServiceImpl"
-                   address="/UserApi" />  <!-- ⚠️ 关键：这就是路径！ -->
-   ```
-
-3. **URL 组成公式**
-   ```
-   完整URL = 上下文路径 + web.xml中的Servlet映射 + address属性值
-   
-   示例: /myapp + /services/ + /UserApi = /myapp/services/UserApi
-   ```
-
-4. **错误示例（必须避免）**
-   ❌ 根据类名推断: `UserServiceImpl` → `/UserService`
-   ❌ 根据 id 推断: `userWebService` → `/userWebService`
-   ✅ 读取配置: `address="/UserApi"` → `/myapp/services/UserApi`
-
-5. **反编译实现类** - 仅用于获取方法列表
-   - 反编译实现类获取所有 `@WebService` 方法
-   - 提取每个方法的参数结构和返回类型
-   - **注意：反编译仅用于获取方法签名，路径必须来自配置文件**
-
-6. **生成完整的 SOAP 请求模板**
-   ```http
-   POST /ws/ServiceName HTTP/1.1
-   Host: {{host}}
-   Content-Type: text/xml; charset=utf-8
-   SOAPAction: ""
-   
-   <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                     xmlns:web="http://namespace.example.com/">
-     <soapenv:Header/>
-     <soapenv:Body>
-       <web:methodName>
-         <param1>{{value1}}</param1>
-         <param2>{{value2}}</param2>
-       </web:methodName>
-     </soapenv:Body>
-   </soapenv:Envelope>
-   ```
-
-7. **为每个 Web Service 方法生成独立接口**
-   - 不要只输出 WSDL 地址
-   - 必须列出所有可用的 SOAP 方法及其参数
-
-8. **记录配置来源** - 每个服务必须标注：
-   - 配置文件路径
-   - XML 配置的行号
-   - address 属性的原始值
-   - implementor 引用的类名
-
-**输出格式：**
-```markdown
-### UserService
-
-- **配置文件**: applicationContext.xml:42
-- **endpoint id**: userWebService
-- **address 属性**: /UserApi
-- **implementor**: userServiceImpl (com.example.webservice.user.UserServiceImpl)
-- **完整 URL**: /myapp/services/UserApi
-- **Servlet 映射**: /services/* (from web.xml)
-```
 
 ### 6. 生成输出
 
@@ -690,64 +756,6 @@ SOAPAction: ""
 6. **【CRITICAL】执行完整性检查（见下方检查清单）**
 7. 在输出中告知用户所有文件保存位置
 8. 确保每个文件都有完整的接口模板
-
----
-
-## ⚠️ 输出前强制验证（BLOCKING）
-
-**此验证必须通过才能写入文件，验证不通过时必须返回补充内容。**
-
-### 验证 1：数量一致性检查
-
-| 检查项 | 计算公式 | 通过条件 |
-|:-------|:---------|:---------|
-| Struts2 路由 | 实际模板数 ÷ Action类数 | ≥ 3 |
-| REST 接口 | 实际模板数 ÷ Controller类数 | ≥ 2 |
-| Web Service 方法 | 实际模板数 ÷ 反编译获得的方法数 | = 100% |
-
-**示例验证**：
-```
-声称: 218 个 Action 类，预估 1000+ 路由
-实际输出: 10 个请求模板
-验证: 10 ÷ 218 = 0.046 < 3
-结果: ❌ 不通过，必须补充
-```
-
-### 验证 2：省略词检测
-
-扫描输出内容，检测以下省略标志：
-
-| 检测模式 | 示例 | 处理 |
-|:---------|:-----|:-----|
-| 使用"等" | `LoginAction, UserAction等` | ❌ 必须列出全部 |
-| 使用"..." | `method1, method2, ...` | ❌ 必须列出全部 |
-| 使用"其他" | `以及其他20个方法` | ❌ 必须列出全部 |
-| 使用"更多" | `更多接口请查看源码` | ❌ 必须列出全部 |
-| 使用占位符 | `{action}_{method}.action` | ❌ 必须展开为实际值 |
-| 使用范围 | `001 ~ 050` | ❌ 必须逐个列出 |
-| 使用描述替代列表 | `方法列表: 用户管理相关` | ❌ 必须列出具体方法 |
-
-**检测到任何省略标志时**：必须替换为完整内容。
-
-### 验证 3：文件完整性检查
-
-```markdown
-□ 主索引中每个模块都有对应的详情文件
-□ 每个详情文件都包含完整的请求模板（不是摘要）
-□ Web Service 索引中的每个服务都有完整的方法列表
-□ 没有"详见xxx"但 xxx 文件不存在的情况
-```
-
-### 验证不通过时的处理流程
-
-```
-1. 停止当前输出
-2. 识别缺失的内容类型（Struts2 路由 / WS 方法 / 其他）
-3. 执行反编译获取完整信息
-4. 补充缺失的请求模板
-5. 重新执行验证
-6. 验证通过后才写入文件
-```
 
 ---
 
