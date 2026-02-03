@@ -364,9 +364,138 @@ SOAPAction: ""
 
 ---
 
-### CRITICAL 6: 完成性检查清单
+### CRITICAL 6: 完成性检查清单（强制执行）
 
 **在标记任务完成前，必须执行以下检查：**
+
+#### 6.1 模块完整性检查
+
+```markdown
+□ 主索引中列出的每个模块都已生成对应的详情文件
+
+  演示案例：
+  ==========
+  假设主索引文件的"模块索引"表格如下：
+
+  | 模块 | 文件 | 接口数量 |
+  |:-----|:-------|:-----|
+  | admin | [myapp_module_admin.md](myapp_module_admin.md) | 218 |
+  | user | [myapp_module_user.md](myapp_module_user.md) | 85 |
+  | api | [myapp_module_api.md](myapp_module_api.md) | 45 |
+
+  验证步骤：
+  1. 检查 myapp_module_admin.md 是否存在
+  2. 检查 myapp_module_user.md 是否存在
+  3. 检查 myapp_module_api.md 是否存在
+  4. 确认模块数量(3) = 实际文件数量(3)
+
+□ Web Service 索引中的每个服务都已生成对应的详情文件
+
+□ 没有"详见xxx"但xxx文件不存在的情况
+```
+
+#### 6.2 交叉验证清单
+
+```markdown
+□ 文件数量一致性
+  演示案例：主索引列出5个模块 → 应该有5个对应的 module_xxx.md 文件
+
+□ 文件名一致性
+  演示案例：主索引引用 myapp_module_admin.md → 实际文件名必须完全匹配
+
+□ 链接有效性
+  演示案例：点击主索引中的 [myapp_module_admin.md] 链接应能成功打开
+```
+
+#### 6.3 内容完整性检查
+
+```markdown
+□ 每个详情文件都包含：
+  - 模块概览（项目名称、上下文路径、框架）
+  - 框架配置（配置文件位置）
+  - 路由详细列表（每个接口的完整信息）
+  - Burp Suite 请求模板
+
+□ 对于空模块（无路由的模块）：
+  演示案例：
+  ==========
+  某模块 upload 只有静态资源，没有业务路由
+
+  正确做法：仍然生成 myapp_module_upload.md
+  ```markdown
+  # MyApp - upload 模块详情
+
+  ## 模块概览
+  该模块主要用于静态文件上传，未检测到业务路由。
+
+  ## 检查结果
+  - WEB-INF目录：不存在
+  - 配置文件：无
+  - 路由接口：无
+```
+
+  错误做法：跳过不生成文件
+```
+
+#### 6.4 执行验证命令
+
+**演示案例：在完成所有文件生成后，运行以下命令验证**
+
+```bash
+# 假设项目名称为 myapp，生成的文件如下：
+# myapp_route_audit_20260129.md    (主索引)
+# myapp_module_admin_20260129.md   (admin模块)
+# myapp_module_user_20260129.md    (user模块)
+# myapp_module_api_20260129.md     (api模块)
+
+# 验证命令1: 检查生成的文件列表
+ls -la myapp_module_*.md
+# 预期输出：应该看到3个模块详情文件
+
+# 验证命令2: 从主索引中提取所有引用的文件名
+grep -o "myapp_module_[^)]*md" myapp_route_audit_20260129.md | sort -u
+
+# 验证命令3: 检查引用的文件是否都存在
+grep -o "myapp_module_[^)]*md" myapp_route_audit_20260129.md | while read f; do
+  if [ ! -f "$f" ]; then
+    echo "❌ 缺失文件: $f"
+  else
+    echo "✅ 存在文件: $f"
+  fi
+done
+```
+
+#### 6.5 完成确认
+
+**演示案例：完整的检查流程**
+
+```markdown
+假设分析了一个名为 myshop 的电商项目，包含以下模块：
+
+步骤1: 生成主索引文件
+  ✅ myshop_route_audit_20260129.md
+
+步骤2: 检查主索引中的模块列表
+  主索引显示：product, order, user, payment (4个模块)
+
+步骤3: 验证详情文件是否存在
+  ✅ myshop_module_product_20260129.md
+  ✅ myshop_module_order_20260129.md
+  ✅ myshop_module_user_20260129.md
+  ✅ myshop_module_payment_20260129.md
+
+步骤4: 生成README文档
+  ✅ myshop_README_20260129.md
+
+步骤5: 执行验证命令
+  $ grep -o "myshop_module_[^)]*md" myshop_route_audit_20260129.md | while read f; do [ -f "$f" ] || echo "缺失: $f"; done
+  (无输出表示所有文件都存在)
+
+步骤6: 确认完成
+  所有检查项通过 → 可以标记任务完成
+```
+
+**只有在以下条件全部满足时，才能标记任务为完成：**
 
 - [ ] 主索引文件已生成
 - [ ] README说明文档已生成
@@ -885,151 +1014,6 @@ URL: /admin/c/CommonQuery_query.action
 ```
 
 ---
-
-## ⚠️ 完成性检查清单（CRITICAL）
-
-**在标记任务完成前，必须执行以下检查：**
-
-### 模块完整性检查
-
-```markdown
-□ 主索引中列出的每个模块都已生成对应的详情文件
-
-  演示案例：
-  ==========
-  假设主索引文件的"模块索引"表格如下：
-
-  | 模块 | 文件 | 接口数量 |
-  |:-----|:-------|:-----|
-  | admin | [myapp_module_admin.md](myapp_module_admin.md) | 218 |
-  | user | [myapp_module_user.md](myapp_module_user.md) | 85 |
-  | api | [myapp_module_api.md](myapp_module_api.md) | 45 |
-
-  验证步骤：
-  1. 检查 myapp_module_admin.md 是否存在
-  2. 检查 myapp_module_user.md 是否存在
-  3. 检查 myapp_module_api.md 是否存在
-  4. 确认模块数量(3) = 实际文件数量(3)
-
-□ Web Service 索引中的每个服务都已生成对应的详情文件
-
-□ 没有"详见xxx"但xxx文件不存在的情况
-```
-
-### 交叉验证清单
-
-```markdown
-□ 文件数量一致性
-  演示案例：主索引列出5个模块 → 应该有5个对应的 module_xxx.md 文件
-
-□ 文件名一致性
-  演示案例：主索引引用 myapp_module_admin.md → 实际文件名必须完全匹配
-
-□ 链接有效性
-  演示案例：点击主索引中的 [myapp_module_admin.md] 链接应能成功打开
-```
-
-### 内容完整性检查
-
-```markdown
-□ 每个详情文件都包含：
-  - 模块概览（项目名称、上下文路径、框架）
-  - 框架配置（配置文件位置）
-  - 路由详细列表（每个接口的完整信息）
-  - Burp Suite 请求模板
-
-□ 对于空模块（无路由的模块）：
-  演示案例：
-  ==========
-  某模块 upload 只有静态资源，没有业务路由
-
-  正确做法：仍然生成 myapp_module_upload.md
-  ```markdown
-  # MyApp - upload 模块详情
-
-  ## 模块概览
-  该模块主要用于静态文件上传，未检测到业务路由。
-
-  ## 检查结果
-  - WEB-INF目录：不存在
-  - 配置文件：无
-  - 路由接口：无
-```
-
-  错误做法：跳过不生成文件
-```
-
-### 执行验证命令
-
-**演示案例：在完成所有文件生成后，运行以下命令验证**
-
-```bash
-# 假设项目名称为 myapp，生成的文件如下：
-# myapp_route_audit_20260129.md    (主索引)
-# myapp_module_admin_20260129.md   (admin模块)
-# myapp_module_user_20260129.md    (user模块)
-# myapp_module_api_20260129.md     (api模块)
-
-# 验证命令1: 检查生成的文件列表
-ls -la myapp_module_*.md
-# 预期输出：应该看到3个模块详情文件
-
-# 验证命令2: 从主索引中提取所有引用的文件名
-grep -o "myapp_module_[^)]*md" myapp_route_audit_20260129.md | sort -u
-
-# 验证命令3: 检查引用的文件是否都存在
-grep -o "myapp_module_[^)]*md" myapp_route_audit_20260129.md | while read f; do
-  if [ ! -f "$f" ]; then
-    echo "❌ 缺失文件: $f"
-  else
-    echo "✅ 存在文件: $f"
-  fi
-done
-```
-
-### 完成确认
-
-**演示案例：完整的检查流程**
-
-```markdown
-假设分析了一个名为 myshop 的电商项目，包含以下模块：
-
-步骤1: 生成主索引文件
-  ✅ myshop_route_audit_20260129.md
-
-步骤2: 检查主索引中的模块列表
-  主索引显示：product, order, user, payment (4个模块)
-
-步骤3: 验证详情文件是否存在
-  ✅ myshop_module_product_20260129.md
-  ✅ myshop_module_order_20260129.md
-  ✅ myshop_module_user_20260129.md
-  ✅ myshop_module_payment_20260129.md
-
-步骤4: 生成README文档
-  ✅ myshop_README_20260129.md
-
-步骤5: 执行验证命令
-  $ grep -o "myshop_module_[^)]*md" myshop_route_audit_20260129.md | while read f; do [ -f "$f" ] || echo "缺失: $f"; done
-  (无输出表示所有文件都存在)
-
-步骤6: 确认完成
-  所有检查项通过 → 可以标记任务完成
-```
-
-**只有在以下条件全部满足时，才能标记任务为完成：**
-
-- [ ] 主索引文件已生成
-- [ ] README说明文档已生成
-- [ ] 主索引中列出的每个模块都有对应的详情文件
-- [ ] 每个详情文件都包含完整的路由信息（或明确说明无路由）
-- [ ] 所有文件链接可访问
-- [ ] 已通过验证命令检查
-
-**如果发现缺失文件，必须：**
-1. 立即补充缺失的文件
-2. 更新主索引（如果链接不匹配）
-3. 重新执行完整性检查
 
 **MD 主索引文件模板：**
 ```markdown
