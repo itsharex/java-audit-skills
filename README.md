@@ -11,6 +11,7 @@
 - **Burp Suite 集成**：生成可直接用于 Burp Suite Repeater 的请求模板
 - **接口文档生成**：为无 API 文档的项目生成接口清单
 - **鉴权机制审计**：识别鉴权框架实现，分析鉴权绕过和越权访问风险
+- **组件漏洞检测**：扫描第三方依赖，匹配 130+ 条 CVE 规则，生成安全报告
 
 ## 前置要求
 
@@ -49,6 +50,12 @@ java-audit-skills/
     │       ├── URI_PARSING_BYPASS.md # URI 解析绕过
     │       ├── VERSION_VULNS.md  # 框架版本漏洞
     │       └── VULNERABILITY_CHECKLIST.md # 漏洞检查清单
+    ├── java-vuln-scanner/       # Java 组件版本漏洞检测工具
+    │   ├── SKILL.md            # Skill 定义文件
+    │   ├── references/         # 漏洞规则库
+    │   │   └── java-vulnerability.yaml  # 130+ CVE 规则
+    │   └── scripts/            # 扫描脚本
+    │       └── scan_dependencies.py     # 依赖扫描脚本
     └── README.md               # Skills 目录说明
 ```
 
@@ -169,9 +176,10 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 ```
 /java-route-mapper /path/to/java/project
 /java-auth-audit /path/to/java/project
+/java-vuln-scanner /path/to/java/project
 ```
 
-建议先使用 java-route-mapper 提取所有路由，再使用 java-auth-audit 分析鉴权机制，结合使用可完整审计项目的接口和权限控制。
+建议先使用 java-route-mapper 提取所有路由，再使用 java-auth-audit 分析鉴权机制，最后使用 java-vuln-scanner 检测组件漏洞，三者结合可完整审计项目的接口、权限控制和依赖安全。
 
 ## 最佳实践
 
