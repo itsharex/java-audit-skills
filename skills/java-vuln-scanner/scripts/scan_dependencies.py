@@ -531,7 +531,7 @@ def get_output_path(target_path: str, ext: str = 'md') -> Tuple[str, str]:
     """
     根据扫描目标生成输出目录和文件路径
     返回: (输出目录, 输出文件路径)
-    格式: {项目名}_vuln_scanner/vuln_report.{ext}
+    格式: {项目名}_audit/vuln_report/vuln_report_{timestamp}.{ext}
     """
     from datetime import datetime
 
@@ -546,8 +546,8 @@ def get_output_path(target_path: str, ext: str = 'md') -> Tuple[str, str]:
     # 清理项目名称（移除特殊字符）
     project_name = re.sub(r'[^\w\u4e00-\u9fff-]', '_', project_name)
 
-    # 生成输出目录名
-    output_dir = f"{project_name}_vuln_scanner"
+    # 生成输出目录名: {项目名}_audit/vuln_report/
+    output_dir = os.path.join(f"{project_name}_audit", "vuln_report")
 
     # 生成带时间戳的文件名
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

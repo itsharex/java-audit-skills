@@ -514,7 +514,7 @@ if (obj != null) {
 **必须生成以下三个文件，缺一不可：**
 
 ```
-{project_name}_auth/
+{project_name}_audit/auth_audit/
 ├── {project_name}_auth_audit_{timestamp}.md      # 主报告（漏洞分析）
 ├── {project_name}_auth_mapping_{timestamp}.md    # 路由-鉴权映射表
 └── {project_name}_auth_README_{timestamp}.md     # 审计说明文档
@@ -564,7 +564,7 @@ if (obj != null) {
 
 ```bash
 # 验证三个文件都已生成
-ls -la {project_name}_auth/
+ls -la {project_name}_audit/auth_audit/
 
 # 预期输出应包含：
 # {project_name}_auth_audit_{timestamp}.md

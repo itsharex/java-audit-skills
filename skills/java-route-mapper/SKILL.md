@@ -664,11 +664,11 @@ Content-Type: application/json
 
 | 文件类型 | 命名格式 | 示例 |
 |---------|---------|------|
-| 主索引 | `{项目名}_route_audit/{项目名}_route_audit_{时间戳}.md` | `myapp_route_audit/myapp_route_audit_20260121.md` |
-| 模块详情 | `{项目名}_route_audit/{项目名}_module_{模块名}_{时间戳}.md` | `myapp_route_audit/myapp_module_admin_20260121.md` |
-| Web Service | `{项目名}_route_audit/{项目名}_ws_{服务名}_{时间戳}.md` | `myapp_route_audit/myapp_ws_userservice_20260121.md` |
-| Namespace 拆分 | `{项目名}_route_audit/{项目名}_{namespace}_{时间戳}.md` | `myapp_route_audit/myapp_admin_user_20260121.md` |
-| README | `{项目名}_route_audit/{项目名}_README_{时间戳}.md` | `myapp_route_audit/myapp_README_20260121.md` |
+| 主索引 | `{项目名}_audit/route_mapper/{项目名}_route_audit_{时间戳}.md` | `myapp_audit/route_mapper/myapp_route_audit_20260121.md` |
+| 模块详情 | `{项目名}_audit/route_mapper/{项目名}_module_{模块名}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_module_admin_20260121.md` |
+| Web Service | `{项目名}_audit/route_mapper/{项目名}_ws_{服务名}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_ws_userservice_20260121.md` |
+| Namespace 拆分 | `{项目名}_audit/route_mapper/{项目名}_{namespace}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_admin_user_20260121.md` |
+| README | `{项目名}_audit/route_mapper/{项目名}_README_{时间戳}.md` | `myapp_audit/route_mapper/myapp_README_20260121.md` |
 
 **动态模块名示例：**
 
@@ -700,7 +700,7 @@ Content-Type: application/json
 为每个模块生成独立的 MD 文件：
 
 ```
-{project_name}_route_audit/
+{project_name}_audit/route_mapper/
 ├── {project_name}_route_audit_{timestamp}.md         # 主索引文件
 ├── {project_name}_module_admin_{timestamp}.md        # admin 模块详情
 ├── {project_name}_module_itc_{timestamp}.md          # itc 模块详情
@@ -766,12 +766,12 @@ Burp Suite 请求模板(必须在代码块中):
 为每个 namespace 生成独立的 MD 文件：
 
 ```
-{project_name}_route_audit_{timestamp}.md              # 主索引
-{project_name}_admin_device_{timestamp}.md              # /device namespace
-{project_name}_admin_channel_{timestamp}.md            # /channel namespace
-{project_name}_admin admin_login_{timestamp}.md              # / namespace (登录相关)
-{project_name}_rest_{timestamp}.md                    # REST 接口
-{project_name}_webservices_{timestamp}.md              # Web Service
+{project_name}_audit/route_mapper/{project_name}_route_audit_{timestamp}.md              # 主索引
+{project_name}_audit/route_mapper/{project_name}_admin_device_{timestamp}.md              # /device namespace
+{project_name}_audit/route_mapper/{project_name}_admin_channel_{timestamp}.md            # /channel namespace
+{project_name}_audit/route_mapper/{project_name}_admin_login_{timestamp}.md              # / namespace (登录相关)
+{project_name}_audit/route_mapper/{project_name}_rest_{timestamp}.md                    # REST 接口
+{project_name}_audit/route_mapper/{project_name}_webservices_{timestamp}.md              # Web Service
 ```
 
 #### 7.4 拆分实现规则
@@ -870,12 +870,12 @@ SOAPAction: ""
 
 ```bash
 # 主索引文件（始终生成）
-{project_name}_route_audit_{timestamp}.md
+{project_name}_audit/route_mapper/{project_name}_route_audit_{timestamp}.md
 
 # 模块详情文件（根据拆分策略生成）
-{project_name}_module_admin_{timestamp}.md
-{project_name}_module_itc_{timestamp}.md
-{project_name}_admin_webservice_{timestamp}.md
+{project_name}_audit/route_mapper/{project_name}_module_admin_{timestamp}.md
+{project_name}_audit/route_mapper/{project_name}_module_itc_{timestamp}.md
+{project_name}_audit/route_mapper/{project_name}_webservice_{timestamp}.md
 ...
 ```
 
