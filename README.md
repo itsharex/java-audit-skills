@@ -10,7 +10,9 @@
 - **反编译集成**：集成 Java 反编译器，支持分析已编译的 .class 和 .jar 文件
 - **Burp Suite 集成**：生成可直接用于 Burp Suite Repeater 的请求模板
 - **接口文档生成**：为无 API 文档的项目生成接口清单
+- **路由调用链追踪**：追踪从 Controller 到 DAO 层的完整调用链，分析参数流向
 - **鉴权机制审计**：识别鉴权框架实现，分析鉴权绕过和越权访问风险
+- **SQL 注入审计**：识别 SQL 执行框架，检测 SQL 注入漏洞风险
 - **组件漏洞检测**：扫描第三方依赖，匹配 130+ 条 CVE 规则，生成安全报告
 
 ## 前置要求
@@ -25,6 +27,8 @@ java-audit-skills/
 └── skills/                      # Skills 集合目录
     ├── README.md               # Skills 详细说明
     ├── java-route-mapper/       # Java 路由与参数映射工具
+    ├── java-route-tracer/      # Java 路由调用链追踪工具
+    ├── java-sql-audit/         # Java SQL 注入审计工具
     ├── java-auth-audit/         # Java 鉴权机制审计工具
     └── java-vuln-scanner/       # Java 组件版本漏洞检测工具
 ```
@@ -34,6 +38,8 @@ java-audit-skills/
 | Skill | 说明 |
 |-------|------|
 | java-route-mapper | Java Web 源码路由与参数映射分析工具 |
+| java-route-tracer | Java Web 源码路由多层级调用链追踪工具 |
+| java-sql-audit | Java Web 源码 SQL 注入漏洞审计工具 |
 | java-auth-audit | Java Web 源码鉴权机制审计工具 |
 | java-vuln-scanner | Java 组件版本漏洞检测工具 |
 
@@ -56,13 +62,71 @@ java-audit-skills/
 
 在 Claude Code 中调用 skill：
 
+**参数说明：**
+- `/path/to/project` - Java 项目根目录，包含源码（.java）或编译文件（.class/.jar）
+- `--route` - 指定要追踪的具体路由路径
+
 ```
-/java-route-mapper /path/to/java/project
-/java-auth-audit /path/to/java/project
-/java-vuln-scanner /path/to/java/project
+/java-route-mapper /path/to/project
+/java-route-tracer --route /api/users/login --project /path/to/project
+/java-sql-audit /path/to/project
+/java-auth-audit /path/to/project
+/java-vuln-scanner /path/to/project
 ```
 
-建议先使用 java-route-mapper 提取所有路由，再使用 java-auth-audit 分析鉴权机制，最后使用 java-vuln-scanner 检测组件漏洞，三者结合可完整审计项目的接口、权限控制和依赖安全。
+**使用流程：**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Java 审计技能使用流程                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+步骤1: java-route-mapper
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 项目路径作用：扫描项目源码，识别路由定义                                │
+│ 输出：所有 HTTP 路由、参数定义、Burp Suite 请求模板                     │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+步骤2: java-route-tracer（指定单个路由 + java-route-mapper 结果目录）
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 项目路径作用：基于项目源码定位路由入口并追踪调用链                      │
+│ 输出：完整调用链、参数流向、Sink 识别、可控性分析                       │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+步骤3: java-sql-audit（java-route-tracer 结果 + 指定单个路由 + java-route-mapper 结果目录）
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 项目路径作用：扫描项目源码，识别 SQL 执行点                             │
+│ 输出：SQL 注入漏洞、参数化查询分析、验证 PoC                            │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+步骤4: java-auth-audit
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 项目路径作用：扫描项目源码和配置，识别鉴权框架                          │
+│ 输出：鉴权配置、拦截规则、越权风险、绕过漏洞                            │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+步骤5: java-vuln-scanner
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 项目路径作用：扫描 pom.xml、build.gradle 或 .jar 文件                   │
+│ 输出：CVE 漏洞匹配结果、组件版本漏洞报告                                │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+                    ┌─────────────────────────┐
+                    │     审计报告输出目录     │
+                    └─────────────────────────┘
+                                    ↓
+                    {project_name}_audit/
+                    ├── route_mapper/
+                    ├── route_tracer/
+                    ├── sql_audit/
+                    ├── auth_audit/
+                    └── vuln_report/
+```
+
+**项目路径要求：**
+- 源码项目：包含 `src/main/java` 等源码目录
+- 编译项目：包含 `WEB-INF/classes` 或 .jar 文件
+- 支持同时存在源码和编译文件的情况，优先使用源码
 
 ## 最佳实践
 

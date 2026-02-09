@@ -48,6 +48,105 @@ Content-Type: application/json
 
 ---
 
+## java-route-tracer
+
+**Java Web 源码路由多层级调用链追踪工具**
+
+适用场景：
+- 追踪指定路由的完整调用链（Controller → Service → DAO）
+- 分析参数在调用链中的流向和变化
+- 识别参数是否到达敏感操作点（SQL/命令/HTTP/文件等）
+- 辅助其他审计技能进行漏洞判定
+
+**支持的漏洞类型：**
+- SQL 注入 - 追踪参数到 SQL 拼接点
+- 命令注入 - 追踪参数到 Runtime.exec()
+- SSRF - 追踪参数到 HTTP 请求
+- XSS - 追踪参数到响应输出
+- 文件操作 - 追踪参数到 File 操作
+- XXE/反序列化/LDAP 注入/表达式注入等
+
+**核心功能：**
+1. 接收路由路径，定位入口点
+2. 追踪从 Controller 到 DAO 层的完整调用链
+3. 记录参数在各层中的变量名变化
+4. 识别最终使用点类型（Sink）
+5. 分析参数的可控性（完全可控/条件可控/不可控）
+6. 支持 .class 和 .jar 文件的反编译分析
+
+**使用示例：**
+
+```
+输入: 路由路径 + 项目路径
+输出: 完整调用链追踪报告
+
+=== 调用链追踪 ===
+[L1] ImageCaptureAction.getImageCapture()
+     ↓ page (含 orderBy, order), searchBean
+[L2] ImageCaptureManager.getImageCaptureJson()
+     ↓ page (含 orderBy, order), searchBean
+
+[L3] ImageCaptureDao.getImageCapturePage()
+     ↓ page (含 orderBy, order)
+[L4] AbstractDao.findSql()
+     └──→ sql = sql + " ORDER BY " + page.getOrderBy()
+
+=== 参数可控性分析 ===
+| 参数 | Sink类型 | 覆盖类型 | 可控性结论 |
+|-------|---------|---------|-----------|
+| page.orderBy | SQL ORDER BY | 无覆盖 | ✅ 完全可控 |
+| page.order | SQL ORDER BY | 无覆盖 | ✅ 完全可控 |
+```
+
+---
+
+## java-sql-audit
+
+**Java Web 源码 SQL 注入漏洞审计工具**
+
+适用场景：
+- 识别 SQL 执行框架和实现方式
+- 发现 SQL 注入漏洞
+- 分析参数化查询使用情况
+- 审计动态 SQL 拼接逻辑
+
+**支持框架：**
+- JDBC
+- MyBatis
+- Hibernate
+
+**核心功能：**
+1. 识别所有 SQL 执行入口点
+2. 分析每个 SQL 操作的参数化情况
+3. 检测所有潜在的 SQL 注入模式
+4. 为每个风险点提供验证 PoC
+5. 分析执行条件（避免误报）
+6. 支持 .class 和 .jar 文件的反编译分析
+7. 结合 java-route-tracer 进行参数流向追踪
+
+**使用示例：**
+
+```
+输入: 项目源码路径
+输出: SQL 注入审计报告
+
+=== SQL 操作映射表 ===
+| 序号 | 类名 | 方法 | 框架 | 参数化状态 | 可利用性 |
+|------|------|------|------|------------|----------|
+| 1 | UserMapper | findById | MyBatis | ✅ 安全 | - |
+| 2 | UserMapper | findByName | MyBatis | ❌ 危险 | ⚠️ 待验证 |
+
+=== 高危风险详情 ===
+🔴 [SQL-001] ORDER BY 注入漏洞
+位置: AbstractDao.java:235
+框架: JDBC
+拼接代码: sql = sql + " ORDER BY " + page.getOrderBy()
+触发方式: page.orderBy 参数直接拼接
+建议修复: 使用白名单校验或参数化查询
+```
+
+---
+
 ## java-auth-audit
 
 **Java Web 源码鉴权机制审计工具**
@@ -157,11 +256,13 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 ## 输出目录结构
 
-三个技能的输出统一到 `{项目名}_audit/` 目录下：
+五个技能的输出统一到 `{项目名}_audit/` 目录下：
 
 ```
 {project_name}_audit/
 ├── route_mapper/      # java-route-mapper 输出
+├── route_tracer/      # java-route-tracer 输出
+├── sql_audit/         # java-sql-audit 输出
 ├── auth_audit/        # java-auth-audit 输出
 └── vuln_report/       # java-vuln-scanner 输出
 ```
