@@ -13,6 +13,9 @@
 - **路由调用链追踪**：追踪从 Controller 到 DAO 层的完整调用链，分析参数流向
 - **鉴权机制审计**：识别鉴权框架实现，分析鉴权绕过和越权访问风险
 - **SQL 注入审计**：识别 SQL 执行框架，检测 SQL 注入漏洞风险
+- **文件上传审计**：识别文件上传入口，分析路径穿越和可执行文件上传风险
+- **文件读取审计**：识别文件读取操作，分析路径遍历攻击风险
+- **XXE 审计**：识别 XML 解析操作，检测外部实体注入漏洞风险
 - **组件漏洞检测**：扫描第三方依赖，匹配 130+ 条 CVE 规则，生成安全报告
 
 ## 前置要求
@@ -26,22 +29,29 @@ java-audit-skills/
 ├── README.md                    # 项目说明文档
 └── skills/                      # Skills 集合目录
     ├── README.md               # Skills 详细说明
-    ├── java-route-mapper/       # Java 路由与参数映射工具
+    ├── shared/                 # 共享工具和资源
+    ├── java-route-mapper/      # Java 路由与参数映射工具
     ├── java-route-tracer/      # Java 路由调用链追踪工具
     ├── java-sql-audit/         # Java SQL 注入审计工具
-    ├── java-auth-audit/         # Java 鉴权机制审计工具
-    └── java-vuln-scanner/       # Java 组件版本漏洞检测工具
+    ├── java-auth-audit/        # Java 鉴权机制审计工具
+    ├── java-file-upload-audit/ # Java 文件上传漏洞审计工具
+    ├── java-file-read-audit/   # Java 文件读取漏洞审计工具
+    ├── java-xxe-audit/        # Java XXE 漏洞审计工具
+    └── java-vuln-scanner/     # Java 组件版本漏洞检测工具
 ```
 
 ## 可用 Skills
 
-| Skill | 说明 |
-|-------|------|
-| java-route-mapper | Java Web 源码路由与参数映射分析工具 |
-| java-route-tracer | Java Web 源码路由多层级调用链追踪工具 |
-| java-sql-audit | Java Web 源码 SQL 注入漏洞审计工具 |
-| java-auth-audit | Java Web 源码鉴权机制审计工具 |
-| java-vuln-scanner | Java 组件版本漏洞检测工具 |
+| Skill                | 说明                                    |
+| ------------------- | --------------------------------------- |
+| java-route-mapper   | Java Web 源码路由与参数映射分析工具     |
+| java-route-tracer   | Java Web 源码路由多层级调用链追踪工具   |
+| java-sql-audit      | Java Web 源码 SQL 注入漏洞审计工具      |
+| java-auth-audit     | Java Web 源码鉴权机制审计工具           |
+| java-file-upload-audit | Java Web 源码文件上传漏洞审计工具     |
+| java-file-read-audit   | Java Web 源码文件读取漏洞审计工具     |
+| java-xxe-audit      | Java Web 源码 XXE 漏洞审计工具         |
+| java-vuln-scanner   | Java 组件版本漏洞检测工具               |
 
 详细说明请参阅 [skills/README.md](skills/README.md)
 
@@ -71,6 +81,9 @@ java-audit-skills/
 /java-route-tracer --route /api/users/login --project /path/to/project
 /java-sql-audit /path/to/project
 /java-auth-audit /path/to/project
+/java-file-upload-audit /path/to/project
+/java-file-read-audit /path/to/project
+/java-xxe-audit /path/to/project
 /java-vuln-scanner /path/to/project
 ```
 
@@ -105,7 +118,13 @@ java-audit-skills/
 │ 输出：鉴权配置、拦截规则、越权风险、绕过漏洞                            │
 └─────────────────────────────────────────────────────────────────────────┘
                                     ↓
-步骤5: java-vuln-scanner
+步骤5: java-file-upload-audit / java-file-read-audit / java-xxe-audit
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 项目路径作用：扫描项目源码，识别文件上传/读取/XXE 操作点               │
+│ 输出：相关漏洞风险、路径遍历分析、参数校验缺失检测                       │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+步骤6: java-vuln-scanner
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ 项目路径作用：扫描 pom.xml、build.gradle 或 .jar 文件                   │
 │ 输出：CVE 漏洞匹配结果、组件版本漏洞报告                                │
@@ -120,6 +139,9 @@ java-audit-skills/
                     ├── route_tracer/
                     ├── sql_audit/
                     ├── auth_audit/
+                    ├── file_upload_audit/
+                    ├── file_read_audit/
+                    ├── xxe_audit/
                     └── vuln_report/
 ```
 

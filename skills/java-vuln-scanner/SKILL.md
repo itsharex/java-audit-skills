@@ -62,7 +62,7 @@ python3 scripts/scan_dependencies.py <目标路径> \
 
 #### 分析步骤
 
-1. 读取生成的报告文件（如 `xxx_audit/vuln_report/vuln_report_xxx.md`）
+1. 读取生成的报告文件（如 `xxx_audit/vuln_report/xxx_vuln_report_xxx.md`）
 2. **识别项目运行环境**：
    - 检查项目使用的框架：Spring MVC / Spring Boot / Struts2 / Servlet / JAX-RS 等
    - 检查容器类型：Tomcat / Jetty / Undertow / WebLogic / WildFly 等
@@ -189,7 +189,7 @@ python3 scripts/scan_dependencies.py /path/to/webapp \
 
 # 2. 输出示例:
 # [INFO] 创建输出目录: webapp_audit/vuln_report
-# [INFO] 报告已保存到: webapp_audit/vuln_report/vuln_report_20260204_101747.md
+# [INFO] 报告已保存到: webapp_audit/vuln_report/webapp_vuln_report_20260204_101747.md
 # 📊 扫描摘要:
 #    模块数量: 4
 #    依赖总数: 262
@@ -203,7 +203,7 @@ python3 scripts/scan_dependencies.py /path/to/webapp \
 
 ```
 webapp_audit/vuln_report/
-└── vuln_report_20260204_101747.md
+└── webapp_vuln_report_20260204_101747.md
     ├── 扫描概览
     ├── 模块风险摘要
     ├── 漏洞详情（按模块分组）

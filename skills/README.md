@@ -199,6 +199,133 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 ---
 
+## java-file-upload-audit
+
+**Java Web 源码文件上传漏洞审计工具**
+
+适用场景：
+- 识别文件上传入口和实现方式
+- 发现任意文件上传、路径穿越与可执行文件上传风险
+- 分析文件名/目录/类型/大小校验是否缺失或可绕过
+- 审计上传目录与访问控制
+
+**支持框架：**
+- Servlet Commons FileUpload
+- Spring Boot MultipartFile
+
+**核心功能：**
+1. 识别所有上传入口点（ServletFileUpload / MultipartFile）
+2. 分析每个上传点的保存路径、文件名来源与校验策略
+3. 检测所有潜在的上传风险模式（类型校验缺失、路径穿越、Web 根目录写入）
+4. 分析文件名/目录/类型/大小校验是否缺失或可绕过
+5. 支持 .class 和 .jar 文件的反编译分析
+
+**使用示例：**
+
+```
+输入: 项目源码路径
+输出: 文件上传漏洞审计报告
+
+=== 上传点映射表 ===
+| 序号 | 类名 | 方法 | 上传实现 | 文件名来源 | 保存路径 | 校验状态 | 可利用性 |
+|------|------|------|----------|------------|----------|----------|----------|
+| 1 | UploadController | upload | MultipartFile | getOriginalFilename | /uploads/ | ❌ 无校验 | ✅ 已确认 |
+
+=== 高危风险详情 ===
+🔴 [C-UPLOAD-001] 任意文件上传漏洞
+位置: UploadController.java:45
+说明: 文件名直接来自用户输入，未做路径规范化处理
+风险: 可通过 ../ 实现路径穿越，写入任意位置
+```
+
+---
+
+## java-file-read-audit
+
+**Java Web 源码任意文件读取漏洞审计工具**
+
+适用场景：
+- 识别文件读取操作和实现方式
+- 发现任意文件读取漏洞
+- 分析路径遍历攻击风险
+- 审计文件路径参数校验逻辑
+
+**支持方法：**
+- BufferedReader / FileReader / FileInputStream
+- Scanner
+- Files.lines / Files.readAllLines / Files.readAllBytes
+
+**核心功能：**
+1. 识别所有文件读取入口点
+2. 分析每个文件操作的路径来源
+3. 检测所有潜在的路径遍历模式
+4. 为每个风险点提供验证 PoC
+5. 支持 .class 和 .jar 文件的反编译分析
+
+**使用示例：**
+
+```
+输入: 项目源码路径
+输出: 文件读取漏洞审计报告
+
+=== 文件操作映射表 ===
+| 序号 | 类名 | 方法 | 读取方法 | 路径来源 | 校验状态 | 可利用性 |
+|------|------|------|----------|----------|----------|----------|
+| 1 | FileController | download | FileInputStream | HTTP参数 | ❌ 无校验 | ✅ 已确认 |
+
+=== 高危风险详情 ===
+🔴 [C-FILE-001] 任意文件读取漏洞
+位置: FileController.java:45
+说明: filePath 参数直接传入 FileInputStream，未做路径校验
+风险: 可通过 ../ 路径遍历读取系统任意文件
+```
+
+---
+
+## java-xxe-audit
+
+**Java Web 源码 XXE (XML External Entity) 漏洞审计工具**
+
+适用场景：
+- 识别 XML 解析器类型和实现方式
+- 发现 XXE 注入漏洞
+- 分析外部实体防护配置情况
+- 审计 XML 输入来源与回显逻辑
+
+**支持解析器：**
+- XMLReader
+- SAXBuilder (JDOM2)
+- SAXReader (dom4j)
+- SAXParserFactory
+- DocumentBuilderFactory
+
+**核心功能：**
+1. 识别所有 XML 解析入口点（5 种主流解析器）
+2. 分析每个解析器的外部实体防护配置
+3. 追踪 XML 输入来源（用户可控性）
+4. 检测回显点（数据是否返回给用户）
+5. 支持 .class 和 .jar 文件的反编译分析
+
+**使用示例：**
+
+```
+输入: 项目源码路径
+输出: XXE 漏洞审计报告
+
+=== XML 解析器映射表 ===
+| 序号 | 类名 | 方法 | 解析器类型 | 输入来源 | 安全配置 | 可利用性 |
+|------|------|------|-----------|----------|----------|----------|
+| 1 | XmlParser | parse | SAXReader | getInputStream | ❌ 未配置 | ✅ 可利用 |
+
+=== 高危风险详情 ===
+🔴 [C-XXE-001] XXE 注入漏洞
+位置: XmlParser.java:45
+说明: SAXReader 未禁用外部实体，用户可控 XML 直接解析
+风险: 可读取系统文件、SSRF、Blind XXE
+```
+
+---
+
 ## java-vuln-scanner
 
 **Java 组件版本漏洞检测工具**
@@ -256,13 +383,16 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 ## 输出目录结构
 
-五个技能的输出统一到 `{项目名}_audit/` 目录下：
+所有技能的输出统一到 `{项目名}_audit/` 目录下：
 
 ```
 {project_name}_audit/
-├── route_mapper/      # java-route-mapper 输出
-├── route_tracer/      # java-route-tracer 输出
-├── sql_audit/         # java-sql-audit 输出
-├── auth_audit/        # java-auth-audit 输出
-└── vuln_report/       # java-vuln-scanner 输出
+├── route_mapper/        # java-route-mapper 输出
+├── route_tracer/        # java-route-tracer 输出
+├── sql_audit/           # java-sql-audit 输出
+├── auth_audit/          # java-auth-audit 输出
+├── file_upload_audit/    # java-file-upload-audit 输出
+├── file_read_audit/      # java-file-read-audit 输出
+├── xxe_audit/           # java-xxe-audit 输出
+└── vuln_report/         # java-vuln-scanner 输出
 ```

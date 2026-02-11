@@ -443,7 +443,7 @@ SOAPAction: ""
 
 ```bash
 # 假设项目名称为 myapp，生成的文件如下：
-# myapp_route_audit_20260129.md    (主索引)
+# myapp_route_mapper_20260129.md    (主索引)
 # myapp_module_admin_20260129.md   (admin模块)
 # myapp_module_user_20260129.md    (user模块)
 # myapp_module_api_20260129.md     (api模块)
@@ -453,10 +453,10 @@ ls -la myapp_module_*.md
 # 预期输出：应该看到3个模块详情文件
 
 # 验证命令2: 从主索引中提取所有引用的文件名
-grep -o "myapp_module_[^)]*md" myapp_route_audit_20260129.md | sort -u
+grep -o "myapp_module_[^)]*md" myapp_route_mapper_20260129.md | sort -u
 
 # 验证命令3: 检查引用的文件是否都存在
-grep -o "myapp_module_[^)]*md" myapp_route_audit_20260129.md | while read f; do
+grep -o "myapp_module_[^)]*md" myapp_route_mapper_20260129.md | while read f; do
   if [ ! -f "$f" ]; then
     echo "❌ 缺失文件: $f"
   else
@@ -473,7 +473,7 @@ done
 假设分析了一个名为 myshop 的电商项目，包含以下模块：
 
 步骤1: 生成主索引文件
-  ✅ myshop_route_audit_20260129.md
+  ✅ myshop_route_mapper_20260129.md
 
 步骤2: 检查主索引中的模块列表
   主索引显示：product, order, user, payment (4个模块)
@@ -488,7 +488,7 @@ done
   ✅ myshop_README_20260129.md
 
 步骤5: 执行验证命令
-  $ grep -o "myshop_module_[^)]*md" myshop_route_audit_20260129.md | while read f; do [ -f "$f" ] || echo "缺失: $f"; done
+  $ grep -o "myshop_module_[^)]*md" myshop_route_mapper_20260129.md | while read f; do [ -f "$f" ] || echo "缺失: $f"; done
   (无输出表示所有文件都存在)
 
 步骤6: 确认完成
@@ -664,7 +664,7 @@ Content-Type: application/json
 
 | 文件类型 | 命名格式 | 示例 |
 |---------|---------|------|
-| 主索引 | `{项目名}_audit/route_mapper/{项目名}_route_audit_{时间戳}.md` | `myapp_audit/route_mapper/myapp_route_audit_20260121.md` |
+| 主索引 | `{项目名}_audit/route_mapper/{项目名}_route_mapper_{时间戳}.md` | `myapp_audit/route_mapper/myapp_route_mapper_20260121.md` |
 | 模块详情 | `{项目名}_audit/route_mapper/{项目名}_module_{模块名}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_module_admin_20260121.md` |
 | Web Service | `{项目名}_audit/route_mapper/{项目名}_ws_{服务名}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_ws_userservice_20260121.md` |
 | Namespace 拆分 | `{项目名}_audit/route_mapper/{项目名}_{namespace}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_admin_user_20260121.md` |
@@ -701,7 +701,7 @@ Content-Type: application/json
 
 ```
 {project_name}_audit/route_mapper/
-├── {project_name}_route_audit_{timestamp}.md         # 主索引文件
+├── {project_name}_route_mapper_{timestamp}.md         # 主索引文件
 ├── {project_name}_module_admin_{timestamp}.md        # admin 模块详情
 ├── {project_name}_module_itc_{timestamp}.md          # itc 模块详情
 ├── {project_name}_module_xxx_{timestamp}.md          # 其他模块（动态生成）
@@ -766,7 +766,7 @@ Burp Suite 请求模板(必须在代码块中):
 为每个 namespace 生成独立的 MD 文件：
 
 ```
-{project_name}_audit/route_mapper/{project_name}_route_audit_{timestamp}.md              # 主索引
+{project_name}_audit/route_mapper/{project_name}_route_mapper_{timestamp}.md              # 主索引
 {project_name}_audit/route_mapper/{project_name}_admin_device_{timestamp}.md              # /device namespace
 {project_name}_audit/route_mapper/{project_name}_admin_channel_{timestamp}.md            # /channel namespace
 {project_name}_audit/route_mapper/{project_name}_admin_login_{timestamp}.md              # / namespace (登录相关)
@@ -870,7 +870,7 @@ SOAPAction: ""
 
 ```bash
 # 主索引文件（始终生成）
-{project_name}_audit/route_mapper/{project_name}_route_audit_{timestamp}.md
+{project_name}_audit/route_mapper/{project_name}_route_mapper_{timestamp}.md
 
 # 模块详情文件（根据拆分策略生成）
 {project_name}_audit/route_mapper/{project_name}_module_admin_{timestamp}.md
@@ -947,12 +947,12 @@ admin 模块:
 对于大型项目，按 namespace 拆分文件：
 
 ```
-{project}_route_audit_{date}.md              # 主索引
+{project}_route_mapper_{date}.md              # 主索引
 {project}_module_{module}_{date}.md          # 模块概览
 {project}_{module}_{namespace}_{date}.md     # namespace 详情
 
 示例（假设项目名为 myapp）：
-myapp_route_audit_20260129.md
+myapp_route_mapper_20260129.md
 myapp_module_admin_20260129.md
 myapp_admin_device_20260129.md
 myapp_admin_channel_20260129.md
