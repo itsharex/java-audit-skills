@@ -77,7 +77,20 @@ java-audit-skills/
 
 **方式一：一键全链路审计（推荐）**
 
-> 需在 `~/.claude/settings.json` 的 `env` 中添加 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"`
+> **前置条件（Agent Teams）：**
+> - Claude Code 版本 >= 2.1.32
+> - 在 `~/.claude/settings.json` 的 `env` 中添加 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"`：
+>   ```json
+>   {
+>     "env": {
+>       "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+>     }
+>   }
+>   ```
+> - 也可通过环境变量临时启用：`export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+> - （可选）安装 tmux 以获得分屏可视化效果，使用 `Shift+Up/Down` 切换 teammate 视图
+>
+> 注：Agent Teams 为 research preview 实验性功能，随 Opus 4.6（2026-02-05）发布。
 
 ```
 /java-audit-pipeline /path/to/project

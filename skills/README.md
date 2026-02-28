@@ -385,7 +385,20 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 **Java Web 全链路自动化安全审计流水线**
 
-> 需在 `~/.claude/settings.json` 的 `env` 中添加 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` 开启 agent teams 功能。
+> **前置条件（Agent Teams）：**
+> - Claude Code 版本 >= 2.1.32
+> - 在 `~/.claude/settings.json` 的 `env` 中添加 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"`：
+>   ```json
+>   {
+>     "env": {
+>       "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+>     }
+>   }
+>   ```
+> - 也可通过环境变量临时启用：`export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+> - （可选）安装 tmux 以获得分屏可视化效果，使用 `Shift+Up/Down` 切换 teammate 视图
+>
+> 注：Agent Teams 为 research preview 实验性功能，随 Opus 4.6（2026-02-05）发布。
 
 适用场景：
 - 一键启动 Java 项目全量安全审计
