@@ -1,11 +1,11 @@
 ---
 name: java-audit-pipeline
-description: Java Web 全链路自动化安全审计流水线。使用 agent team 编排多个审计 skill，自动完成路由分析→鉴权审计→组件漏洞→交叉筛选→调用链追踪→漏洞深度分析→质量校验的完整流程。适用于：(1) 一键启动 Java 项目全量安全审计，(2) 自动识别无鉴权高危路由并精准分析漏洞，(3) 基于调用链的精准漏洞审计（减少误报），(4) 自动校验每个 skill 输出质量。用户只需提供源码路径和输出路径。注意：此 skill 依赖 Claude Code agent teams 功能，需在配置文件 `~/.claude/settings.json` 的 `env` 中添加 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` 开启。
+description: Java Web 全链路自动化安全审计流水线。使用 agent team 编排多个审计 skill，自动完成路由分析→鉴权审计→组件漏洞→交叉筛选→调用链追踪→漏洞深度分析→质量校验的完整流程。适用于：(1) 一键启动 Java 项目全量安全审计，(2) 自动识别无鉴权高危路由并精准分析漏洞，(3) 基于调用链的精准漏洞审计（减少误报），(4) 自动校验每个 skill 输出质量。用户只需提供源码路径和输出路径。
 ---
 
 # Java 全链路审计流水线
 
-使用 agent team 编排 7 个 agent，分 5 个阶段自动完成 Java Web 项目的完整安全审计。
+使用 agent team 编排 10 个 agent，分 5 个阶段自动完成 Java Web 项目的完整安全审计。
 
 ## 输入
 
@@ -27,9 +27,12 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
 阶段3: 调用链追踪（agent-5）
   └─ /java-route-tracer 追踪高危路由参数流向
         ↓ agent-7 校验
-阶段4: 漏洞深度分析（agent-6）
-  └─ 根据调用链 sink 类型选择对应漏洞 skill
-        ↓ agent-7 校验
+阶段4: 漏洞深度分析（agent-6a/6b/6c/6d 按需并行）
+  ├─ agent-6a: /java-sql-audit         → SQL注入分析
+  ├─ agent-6b: /java-xxe-audit         → XXE注入分析
+  ├─ agent-6c: /java-file-upload-audit  → 文件上传分析
+  └─ agent-6d: /java-file-read-audit   → 文件读取分析
+        ↓ 各自完成后 agent-7 分别校验
 阶段5: 汇总报告（agent-7）
   └─ 整合所有校验结果，生成最终 quality_report.md
 ```
@@ -46,7 +49,7 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
    mkdir -p {output_path}/route_mapper {output_path}/auth_audit {output_path}/vuln_report {output_path}/route_tracer {output_path}/sql_audit {output_path}/xxe_audit {output_path}/file_upload_audit {output_path}/file_read_audit
    ```
 3. 创建 agent team
-4. 使用 TaskCreate 创建 7 个 agent 任务并设置依赖：
+4. 使用 TaskCreate 创建 10 个 agent 任务并设置依赖：
 
 ```
 task-1:  agent-1 路由分析           (pending)
@@ -59,11 +62,15 @@ task-7:  agent-4 交叉分析           (blockedBy: [4,5,6])
 task-8:  agent-7 校验阶段2          (blockedBy: [7])
 task-9:  agent-5 调用链追踪         (blockedBy: [8])
 task-10: agent-7 校验阶段3          (blockedBy: [9])
-task-11: agent-6 漏洞深度分析       (blockedBy: [10])
-task-12: agent-7 校验阶段4+汇总     (blockedBy: [11])
+task-11: agent-6a SQL注入分析       (blockedBy: [10], 按需启动)
+task-12: agent-6b XXE注入分析       (blockedBy: [10], 按需启动)
+task-13: agent-6c 文件上传分析      (blockedBy: [10], 按需启动)
+task-14: agent-6d 文件读取分析      (blockedBy: [10], 按需启动)
+task-15: agent-7 校验阶段4+汇总     (blockedBy: [11,12,13,14], 仅等待实际启动的)
 ```
 
 5. agent-1/2/3 并行分配，每个完成后负责人立即触发 agent-7 校验该 agent 的输出，不合格则通知重做；三个校验全部通过后 agent-4 才启动
+6. 阶段3（agent-5）校验通过后，负责人读取调用链报告，按 sink 类型分类，仅启动有对应 sink 的 agent-6x（无对应 sink 则跳过该 agent，直接标记 completed）
 
 ### 通用执行要求（传递给每个 agent）
 
@@ -149,30 +156,64 @@ task-12: agent-7 校验阶段4+汇总     (blockedBy: [11])
 任务: 按 P0→P1→P2 优先级逐条追踪调用链
 ```
 
-### Agent-6: 漏洞审计员
+### Agent-6a: SQL注入审计员
 
 ```
-角色: 漏洞审计员
-等待: agent-5 完成
+角色: SQL注入审计员
+等待: agent-5 完成，且调用链中存在 SQL 相关 sink
+技能: /java-sql-audit
 源代码: {source_path}
-输出目录: {output_path}/（各子目录已创建：sql_audit/、xxe_audit/、file_upload_audit/、file_read_audit/，直接写入对应目录）
-输入: {output_path}/route_tracer/ 下所有调用链报告
+输出目录: {output_path}/sql_audit/（已创建，直接写入）
+输入: {output_path}/route_tracer/ 下含 SQL sink 的调用链报告
+任务: 基于调用链做精准 SQL 注入分析（非全量扫描），减少误报
 ```
 
-**执行步骤：**
+### Agent-6b: XXE注入审计员
 
-1. 遍历所有调用链报告，识别最终使用点（sink）类型
-2. 根据 sink 类型选择对应 skill：
+```
+角色: XXE注入审计员
+等待: agent-5 完成，且调用链中存在 XML 解析 sink
+技能: /java-xxe-audit
+源代码: {source_path}
+输出目录: {output_path}/xxe_audit/（已创建，直接写入）
+输入: {output_path}/route_tracer/ 下含 XML 解析 sink 的调用链报告
+任务: 基于调用链做精准 XXE 注入分析（非全量扫描），减少误报
+```
 
-| Sink 类型 | 特征 | Skill |
+### Agent-6c: 文件上传审计员
+
+```
+角色: 文件上传审计员
+等待: agent-5 完成，且调用链中存在文件上传 sink
+技能: /java-file-upload-audit
+源代码: {source_path}
+输出目录: {output_path}/file_upload_audit/（已创建，直接写入）
+输入: {output_path}/route_tracer/ 下含文件上传 sink 的调用链报告
+任务: 基于调用链做精准文件上传漏洞分析（非全量扫描），减少误报
+```
+
+### Agent-6d: 文件读取审计员
+
+```
+角色: 文件读取审计员
+等待: agent-5 完成，且调用链中存在文件读取 sink
+技能: /java-file-read-audit
+源代码: {source_path}
+输出目录: {output_path}/file_read_audit/（已创建，直接写入）
+输入: {output_path}/route_tracer/ 下含文件读取 sink 的调用链报告
+任务: 基于调用链做精准文件读取漏洞分析（非全量扫描），减少误报
+```
+
+**Sink 类型与 agent 对应关系：**
+
+| Sink 类型 | 特征 | Agent |
 |:----------|:-----|:------|
-| SQL 拼接 | `Statement.execute()`, `sql +`, MyBatis `${}` | `/java-sql-audit` |
-| XML 解析 | `DocumentBuilder.parse()`, `SAXParser` | `/java-xxe-audit` |
-| 文件上传 | `MultipartFile`, `transferTo()` | `/java-file-upload-audit` |
-| 文件读取 | `BufferedReader`, `Files.read` | `/java-file-read-audit` |
+| SQL 拼接 | `Statement.execute()`, `sql +`, MyBatis `${}` | agent-6a |
+| XML 解析 | `DocumentBuilder.parse()`, `SAXParser` | agent-6b |
+| 文件上传 | `MultipartFile`, `transferTo()` | agent-6c |
+| 文件读取 | `BufferedReader`, `Files.read` | agent-6d |
 
-3. 基于调用链做精准分析（非全量扫描），减少误报
-4. 一条调用链有多种 sink 时分别执行对应 skill
+**注意：仅启动有对应 sink 的 agent，无对应 sink 则跳过。**
 
 ### Agent-7: 检查员（CRITICAL — 贯穿全流程）
 
@@ -193,8 +234,11 @@ task-12: agent-7 校验阶段4+汇总     (blockedBy: [11])
 | agent-2 完成后 | java-auth-audit 输出 | 通知 agent-2 重做 |
 | agent-3 完成后 | java-vuln-scanner 输出 | 通知 agent-3 重做 |
 | agent-4 完成后 | `high_risk_routes.md` | 通知 agent-4 重做，阻塞 agent-5 |
-| agent-5 完成后 | route_tracer 所有输出 | 通知 agent-5 补充，阻塞 agent-6 |
-| agent-6 完成后 | 漏洞审计 skill 所有输出 | 通知 agent-6 补充 |
+| agent-5 完成后 | route_tracer 所有输出 | 通知 agent-5 补充，阻塞 agent-6a/6b/6c/6d |
+| agent-6a 完成后 | java-sql-audit 输出 | 通知 agent-6a 补充 |
+| agent-6b 完成后 | java-xxe-audit 输出 | 通知 agent-6b 补充 |
+| agent-6c 完成后 | java-file-upload-audit 输出 | 通知 agent-6c 补充 |
+| agent-6d 完成后 | java-file-read-audit 输出 | 通知 agent-6d 补充 |
 | 全部通过后 | 跨 skill 数据一致性 | 生成最终 quality_report.md |
 
 #### 通用校验方法
@@ -237,13 +281,14 @@ task-12: agent-7 校验阶段4+汇总     (blockedBy: [11])
 - **特殊检查**：grep 所有文件中的 `${`，发现未替换变量则不合格
 - 文件数量 = 方法数 + 1（总索引）
 - 追踪覆盖率：已追踪数 / high_risk 建议追踪数 >= 90%
-- 通过 → 通知负责人启动 agent-6
+- 通过 → 通知负责人启动 agent-6a/6b/6c/6d（按 sink 类型按需启动）
 
-#### 阶段4 校验（agent-6 完成后）
+#### 阶段4 校验（agent-6a/6b/6c/6d 各自完成后独立校验）
 
-- 根据实际执行的 skill 类型，使用 Skill 工具加载对应 skill（如 `/java-sql-audit`），从 skill 上下文中提取输出规范，逐项检查
+- 每个 agent-6x 完成后，agent-7 立即使用 Skill 工具加载对应 skill，从 skill 上下文中提取输出规范，逐项检查
+- 不合格 → 通知对应 agent-6x 补充
+- 全部实际启动的 agent-6x 校验通过后 → 进入最终汇总
 - 审计覆盖率：已审计调用链数 / 有 sink 的调用链总数 >= 90%
-- 通过 → 进入最终汇总
 
 #### 最终汇总：生成 `quality_report.md`
 
@@ -301,10 +346,10 @@ task-12: agent-7 校验阶段4+汇总     (blockedBy: [11])
 ├── vuln_report/               # 阶段1 - agent-3
 ├── high_risk_routes.md        # 阶段2 - agent-4
 ├── route_tracer/              # 阶段3 - agent-5
-├── sql_audit/                 # 阶段4 - agent-6
-├── xxe_audit/                 # 阶段4 - agent-6
-├── file_upload_audit/         # 阶段4 - agent-6
-├── file_read_audit/           # 阶段4 - agent-6
+├── sql_audit/                 # 阶段4 - agent-6a
+├── xxe_audit/                 # 阶段4 - agent-6b
+├── file_upload_audit/         # 阶段4 - agent-6c
+├── file_read_audit/           # 阶段4 - agent-6d
 └── quality_report.md          # 阶段5 - agent-7
 ```
 
@@ -318,4 +363,7 @@ agent-7 校验时使用 Skill 工具加载对应 skill 获取输出规范：
 | agent-2 输出 | `/java-auth-audit` |
 | agent-3 输出 | `/java-vuln-scanner` |
 | agent-5 输出 | `/java-route-tracer` |
-| agent-6 输出（按 sink 类型） | `/java-sql-audit`、`/java-xxe-audit`、`/java-file-upload-audit`、`/java-file-read-audit` |
+| agent-6a 输出 | `/java-sql-audit` |
+| agent-6b 输出 | `/java-xxe-audit` |
+| agent-6c 输出 | `/java-file-upload-audit` |
+| agent-6d 输出 | `/java-file-read-audit` |

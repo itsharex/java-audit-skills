@@ -407,11 +407,11 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 - 自动校验每个 skill 输出质量
 
 **核心功能：**
-1. 使用 agent team 编排 7 个 agent，分 5 个阶段自动完成完整安全审计
+1. 使用 agent team 编排 10 个 agent，分 5 个阶段自动完成完整安全审计
 2. 阶段1：信息收集（路由分析 + 鉴权审计 + 组件漏洞扫描，并行执行）
 3. 阶段2：交叉分析（筛选无鉴权+有漏洞触发点的高危路由）
 4. 阶段3：调用链追踪（按优先级追踪高危路由参数流向）
-5. 阶段4：漏洞深度分析（根据 sink 类型选择对应审计 skill）
+5. 阶段4：漏洞深度分析（根据 sink 类型选择对应审计 skill，agent-6a/6b/6c/6d 按需并行）
 6. 阶段5：质量校验（每阶段完成后立即校验，不合格则重做）
 
 **流程总览：**
@@ -428,9 +428,12 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 阶段3: 调用链追踪（agent-5）
   └─ /java-route-tracer 追踪高危路由参数流向
         ↓ agent-7 校验
-阶段4: 漏洞深度分析（agent-6）
-  └─ 根据调用链 sink 类型选择对应漏洞 skill
-        ↓ agent-7 校验
+阶段4: 漏洞深度分析（agent-6a/6b/6c/6d 按需并行）
+  ├─ agent-6a: /java-sql-audit         → SQL注入分析
+  ├─ agent-6b: /java-xxe-audit         → XXE注入分析
+  ├─ agent-6c: /java-file-upload-audit  → 文件上传分析
+  └─ agent-6d: /java-file-read-audit   → 文件读取分析
+        ↓ 各自完成后 agent-7 分别校验
 阶段5: 汇总报告（agent-7）
   └─ 整合所有校验结果，生成最终 quality_report.md
 ```
