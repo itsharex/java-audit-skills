@@ -381,6 +381,58 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 ---
 
+## java-audit-pipeline
+
+**Java Web 全链路自动化安全审计流水线**
+
+> 需在 `~/.claude/settings.json` 的 `env` 中添加 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` 开启 agent teams 功能。
+
+适用场景：
+- 一键启动 Java 项目全量安全审计
+- 自动识别无鉴权高危路由并精准分析漏洞
+- 基于调用链的精准漏洞审计（减少误报）
+- 自动校验每个 skill 输出质量
+
+**核心功能：**
+1. 使用 agent team 编排 7 个 agent，分 5 个阶段自动完成完整安全审计
+2. 阶段1：信息收集（路由分析 + 鉴权审计 + 组件漏洞扫描，并行执行）
+3. 阶段2：交叉分析（筛选无鉴权+有漏洞触发点的高危路由）
+4. 阶段3：调用链追踪（按优先级追踪高危路由参数流向）
+5. 阶段4：漏洞深度分析（根据 sink 类型选择对应审计 skill）
+6. 阶段5：质量校验（每阶段完成后立即校验，不合格则重做）
+
+**流程总览：**
+
+```
+阶段1: 信息收集（agent-1/2/3 并行）
+  ├─ agent-1: /java-route-mapper   → 全量路由+参数
+  ├─ agent-2: /java-auth-audit     → 路由鉴权映射
+  └─ agent-3: /java-vuln-scanner   → 组件漏洞
+        ↓ agent-7 逐个校验，全部通过后
+阶段2: 交叉分析（agent-4）
+  └─ 筛选无鉴权+有漏洞触发点的高危路由
+        ↓ agent-7 校验
+阶段3: 调用链追踪（agent-5）
+  └─ /java-route-tracer 追踪高危路由参数流向
+        ↓ agent-7 校验
+阶段4: 漏洞深度分析（agent-6）
+  └─ 根据调用链 sink 类型选择对应漏洞 skill
+        ↓ agent-7 校验
+阶段5: 汇总报告（agent-7）
+  └─ 整合所有校验结果，生成最终 quality_report.md
+```
+
+**使用示例：**
+
+```
+/java-audit-pipeline /path/to/project
+
+输入: 源码目录路径 + 输出目录路径（可选，默认 {source_path}_audit）
+输出: 完整审计报告目录，包含所有阶段结果和质量检查报告
+```
+
+---
+
 ## 输出目录结构
 
 所有技能的输出统一到 `{项目名}_audit/` 目录下：
@@ -391,8 +443,10 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 ├── route_tracer/        # java-route-tracer 输出
 ├── sql_audit/           # java-sql-audit 输出
 ├── auth_audit/          # java-auth-audit 输出
-├── file_upload_audit/    # java-file-upload-audit 输出
-├── file_read_audit/      # java-file-read-audit 输出
+├── file_upload_audit/   # java-file-upload-audit 输出
+├── file_read_audit/     # java-file-read-audit 输出
 ├── xxe_audit/           # java-xxe-audit 输出
-└── vuln_report/         # java-vuln-scanner 输出
+├── vuln_report/         # java-vuln-scanner 输出
+├── high_risk_routes.md  # java-audit-pipeline 交叉分析结果
+└── quality_report.md    # java-audit-pipeline 质量检查报告
 ```
