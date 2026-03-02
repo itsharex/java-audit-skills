@@ -5,7 +5,7 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
 
 # Java 全链路审计流水线
 
-使用 agent team 编排 10 个 agent，分 5 个阶段自动完成 Java Web 项目的完整安全审计。
+使用 agent team 编排 10 个 agent teams模型，分 5 个阶段自动完成 Java Web 项目的完整安全审计。
 
 ## 输入
 
