@@ -5,7 +5,7 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
 
 # Java 全链路审计流水线
 
-使用 agent teams 编排多个 agent（含动态扩展的调用链追踪 worker），分 5 个阶段自动完成 Java Web 项目的完整安全审计。
+使用 agent team 编排多个 agent（含动态扩展的调用链追踪 worker），分 5 个阶段自动完成 Java Web 项目的完整安全审计。采用 agent-7-x 质检员池按需并行校验，所有阶段统一「完成一个、校验一个」模式。
 
 ## 输入
 
@@ -17,31 +17,32 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
 
 ```
 阶段1: 信息收集（并行）
-  ├─ agent-1-route-mapper: /java-route-mapper   → 全量路由+参数  → agent-7 校验 → 通过后关闭
-  ├─ agent-2-auth-audit: /java-auth-audit     → 路由鉴权映射    → agent-7 校验 → 通过后关闭
-  └─ agent-3-vuln-scanner: /java-vuln-scanner   → 组件漏洞        → agent-7 校验 → 通过后关闭
+  ├─ agent-1-route-mapper: /java-route-mapper   → 全量路由+参数  → agent-7-x 校验 → 通过后关闭
+  ├─ agent-2-auth-audit: /java-auth-audit     → 路由鉴权映射    → agent-7-x 校验 → 通过后关闭
+  └─ agent-3-vuln-scanner: /java-vuln-scanner   → 组件漏洞        → agent-7-x 校验 → 通过后关闭
         ↓ 三个校验全部通过后
 阶段2: 交叉分析（并行）
-  ├─ agent-4a-risk-classifier: 无鉴权路由分级（P0/P1） → agent-7 校验 → 通过后关闭
-  └─ agent-4b-vuln-aggregator: 漏洞汇总（组件漏洞+鉴权绕过） → agent-7 校验 → 通过后关闭
+  ├─ agent-4a-risk-classifier: 无鉴权路由分级（P0/P1） → agent-7-x 校验 → 通过后关闭
+  └─ agent-4b-vuln-aggregator: 漏洞汇总（组件漏洞+鉴权绕过） → agent-7-x 校验 → 通过后关闭
         ↓ 两个校验全部通过后
 阶段3: 调用链追踪（分批并行）
   ├─ agent-5-route-tracer: 读取 P0+P1 全部高危路由，分批创建追踪任务 → 通过后关闭
-  └─ agent-5-1/5-2/.../5-N: /java-route-tracer 并行追踪各批次路由（含鉴权风险透传） → agent-7 校验 → 通过后关闭
-        ↓
+  └─ agent-5-1/5-2/.../5-N: /java-route-tracer 并行追踪各批次路由（含鉴权风险透传） → 每个完成后立即 agent-7-x 校验 → 通过后关闭
+        ↓ 全部 worker 校验通过后
 阶段4: 漏洞深度分析（按需并行）
-  ├─ agent-6a-sql-auditor: /java-sql-audit         → SQL注入分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
-  ├─ agent-6b-xxe-auditor: /java-xxe-audit         → XXE注入分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
-  ├─ agent-6c-upload-auditor: /java-file-upload-audit  → 文件上传分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
-  └─ agent-6d-fileread-auditor: /java-file-read-audit   → 文件读取分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
+  ├─ agent-6a-sql-auditor: /java-sql-audit         → SQL注入分析（含可利用前置条件） → agent-7-x 校验 → 通过后关闭
+  ├─ agent-6b-xxe-auditor: /java-xxe-audit         → XXE注入分析（含可利用前置条件） → agent-7-x 校验 → 通过后关闭
+  ├─ agent-6c-upload-auditor: /java-file-upload-audit  → 文件上传分析（含可利用前置条件） → agent-7-x 校验 → 通过后关闭
+  └─ agent-6d-fileread-auditor: /java-file-read-audit   → 文件读取分析（含可利用前置条件） → agent-7-x 校验 → 通过后关闭
         ↓
 阶段5: 汇总报告
-  └─ agent-7-quality-checker: 整合所有校验结果，生成最终 quality_report.md → 完成后关闭
+  └─ agent-7-x: 整合所有校验结果，生成最终 quality_report.md → 完成后关闭
 ```
 
 **关键设计：**
-1. agent-7-quality-checker 在每个阶段完成后立即校验，不合格则通知重做，避免错误传递到下游
-2. 每个 agent 校验通过后立即关闭，释放资源，仅保留必要的 agent 运行
+1. **质检员池按需扩缩**：负责人根据每个阶段的并发校验需求，动态 spawn agent-7-1, agent-7-2, ..., agent-7-N 质检员，确保每个完成的 agent 都能立即获得校验，零等待
+2. **完成一个、校验一个**：所有阶段（含阶段3调用链 worker）统一采用「agent 完成即校验」模式，不等待同阶段其他 agent
+3. 每个 agent 校验通过后立即关闭，释放资源；质检员在当前阶段无待校验任务时关闭，下一阶段按需重新 spawn
 
 ## 执行指令
 
@@ -59,33 +60,40 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
 task-1:  agent-1-route-mapper 路由分析           (pending)
 task-2:  agent-2-auth-audit 鉴权分析             (pending)
 task-3:  agent-3-vuln-scanner 组件漏洞扫描       (pending)
-task-4:  agent-7-quality-checker 校验 agent-1    (blockedBy: [1])
-task-5:  agent-7-quality-checker 校验 agent-2    (blockedBy: [2])
-task-6:  agent-7-quality-checker 校验 agent-3    (blockedBy: [3])
+task-4:  agent-7-x 校验 agent-1               (blockedBy: [1], 分配给空闲检员)
+task-5:  agent-7-x 校验 agent-2               (blockedBy: [2], 分配给空闲检员)
+task-6:  agent-7-x 校验 agent-3               (blockedBy: [3], 分配给空闲检员)
 task-7:  agent-4a-risk-classifier 无鉴权路由分级 (blockedBy: [4,5,6])
 task-8:  agent-4b-vuln-aggregator 漏洞汇总       (blockedBy: [4,5,6])
-task-9:  agent-7-quality-checker 校验 agent-4a   (blockedBy: [7])
-task-10: agent-7-quality-checker 校验 agent-4b   (blockedBy: [8])
+task-9:  agent-7-x 校验 agent-4a              (blockedBy: [7], 分配给空闲检员)
+task-10: agent-7-x 校验 agent-4b              (blockedBy: [8], 分配给空闲检员)
 task-11: agent-5-route-tracer 路由分批与调度     (blockedBy: [9,10])
-task-12: agent-5-N 并行调用链追踪               (blockedBy: [11], 负责人根据分批结果动态创建子任务并 spawn worker)
-task-13: agent-7-quality-checker 校验阶段3       (blockedBy: [12])
+task-12: agent-5-N 并行调用链追踪 + 逐个校验    (blockedBy: [11], 每个 worker 完成后立即由 agent-7-x 校验，通过后关闭该 worker)
+task-13: 负责人汇总阶段3覆盖率                  (blockedBy: [12], 全部 worker 校验通过后计算追踪覆盖率)
 task-14: agent-6a-sql-auditor SQL注入分析        (blockedBy: [13], 按需启动)
 task-15: agent-6b-xxe-auditor XXE注入分析        (blockedBy: [13], 按需启动)
 task-16: agent-6c-upload-auditor 文件上传分析    (blockedBy: [13], 按需启动)
 task-17: agent-6d-fileread-auditor 文件读取分析  (blockedBy: [13], 按需启动)
-task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17], 仅等待实际启动的)
+task-18: agent-7-x 逐个校验 agent-6x          (每个 agent-6x 完成后立即由空闲检员校验，通过后关闭)
+task-19: agent-7-x 最终汇总 quality_report.md  (blockedBy: [18], 仅等待实际启动的 agent-6x 全部校验通过)
 ```
 
-5. agent-1-route-mapper/agent-2-auth-audit/agent-3-vuln-scanner 并行分配，每个完成后负责人立即触发 agent-7-quality-checker 校验该 agent 的输出，不合格则通知重做；三个校验全部通过后 agent-4a 和 agent-4b 并行启动
-6. 阶段2（agent-4a 和 agent-4b）校验通过后，agent-5-route-tracer（分配员）启动，读取 P0+P1 全部高危路由并分批
-7. agent-5-route-tracer 分批完成后，负责人根据分批结果动态 spawn agent-5-1/5-2/.../5-N 并行追踪各批次
-8. 阶段3（所有 agent-5-N）校验通过后，负责人读取调用链报告，按 sink 类型分类，仅启动有对应 sink 的 agent-6x（无对应 sink 则跳过该 agent，直接标记 completed）
-8. **Agent 生命周期管理**：
-   - 每个 agent 完成任务且 agent-7-quality-checker 校验通过后，负责人立即使用 SendMessage 工具发送 `type: "shutdown_request"` 给该 agent
+5. **阶段1 调度**：agent-1/2/3 并行分配，同时 spawn 3 个质检员（agent-7-1/7-2/7-3）；每个 agent 完成后立即分配给空闲质检员校验，不合格则通知重做；三个校验全部通过后关闭本阶段质检员，并行启动 agent-4a 和 agent-4b
+6. **阶段2 调度**：agent-4a 和 agent-4b 各自完成后立即由空闲检员校验，两个都通过后启动 agent-5-route-tracer（分配员）
+7. **阶段3 调度**：agent-5 分批完成后，负责人动态 spawn agent-5-1/5-2/.../5-N 并行追踪；每个 worker 完成后立即由空闲检员校验，通过后关闭该 worker；全部通过后负责人汇总覆盖率
+8. **阶段4 调度**：负责人读取调用链报告，按 sink 类型按需启动 agent-6x；每个 agent-6x 完成后立即由空闲检员校验，通过后关闭（无对应 sink 则跳过，直接标记 completed）
+9. **质检员池调度策略**：
+   - 每个阶段开始时，负责人根据该阶段并发 agent 数量 spawn 等量的质检员（如阶段1有3个 agent → spawn agent-7-1/7-2/7-3）
+   - 质检员命名规则：`agent-7-{序号}`，序号从 1 开始递增，跨阶段可复用编号
+   - 有新校验需求时，优先分配给空闲质检员；若全部繁忙则排队等待
+   - 所有质检员能力完全相同，校验标准一致
+   - 当前阶段所有校验完成后，关闭该阶段的质检员；下一阶段按需重新 spawn
+10. **Agent 生命周期管理**：
+   - 每个 agent 完成任务且 agent-7-x 校验通过后，负责人立即使用 SendMessage 工具发送 `type: "shutdown_request"` 给该 agent
    - 负责人等待 agent 响应 `type: "shutdown_response"`，确认 agent 已关闭
    - 若 30 秒内未收到响应，记录警告并继续后续流程（避免阻塞）
-   - 仅保留 agent-7-quality-checker 持续运行，直到所有阶段完成后再关闭
-   - **关闭顺序**：阶段1（agent-1/2/3）→ 阶段2（agent-4a/4b）→ 阶段3（agent-5, agent-5-1/5-2/.../5-N）→ 阶段4（agent-6a/6b/6c/6d）→ 阶段5（agent-7）
+   - agent-7-x 质检员在当前阶段所有校验完成后关闭，下一阶段按需重新 spawn
+   - **关闭顺序**：每个阶段内：被审计 agent 校验通过后立即关闭 → 该阶段所有校验完成后关闭质检员 → 进入下一阶段
 
 ### 通用执行要求（传递给每个 agent）
 
@@ -459,7 +467,8 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 2. 关闭 agent-5-route-tracer（分配员任务完成）
 3. 并行 spawn agent-5-1, agent-5-2, ..., agent-5-N（每个使用下方 Worker 模板）
 4. 为每个 worker 创建子任务并分配
-5. 等待所有 worker 完成后触发 agent-7 校验
+5. 每个 worker 完成后立即将校验任务分配给空闲的 agent-7-x，校验通过后关闭该 worker
+6. 全部 worker 校验通过后，负责人汇总追踪覆盖率（已追踪数 / 建议追踪数 >= 90%），通过后进入阶段4
 
 ---
 
@@ -598,33 +607,42 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 3. 仅启动有对应 sink 的 agent，无对应 sink 则跳过该 agent，直接标记任务为 completed
 4. 优先方案：直接读取 java-route-tracer 输出报告中的 **Sink 识别章节**，该章节已完成完整的 Sink 分类
 
-### Agent-7-quality-checker: 质量检查员（CRITICAL — 贯穿全流程）
+### Agent-7-x-quality-checker: 质检员池（按需动态 spawn，贯穿全流程）
 
 ```
-角色: agent-7-quality-checker (质量检查员，常驻)
+角色: agent-7-x-quality-checker（质检员池，按需 spawn）
+命名: agent-7-1, agent-7-2, ..., agent-7-N，序号递增
 校验依据: 使用 Skill 工具加载对应 skill（如 /java-route-mapper），从加载的 skill 上下文中提取输出规范作为校验标准
-输出: {output_path}/quality_report.md
-工作模式: 每个阶段完成后立即校验，不合格则通知对应 agent 重做
+输出: {output_path}/quality_report.md（由最后一个质检员汇总生成）
+工作模式: 每个 agent 完成后立即校验（完成一个、校验一个），负责人将校验任务分配给空闲质检员
 ```
 
-**核心原则：每个阶段的输出必须通过校验后，才允许下一阶段启动。避免错误数据传递到下游。**
+**核心原则：每个 agent 的输出必须通过校验后，才允许关闭该 agent 并推进流程。避免错误数据传递到下游。**
 
-#### 校验触发时机
+**质检员池调度策略：**
+- 每个阶段开始时，负责人根据该阶段并发 agent 数量 spawn 等量质检员
+  - 阶段1：3 个 agent → spawn 3 个质检员（agent-7-1/7-2/7-3）
+  - 阶段2：2 个 agent → spawn 2 个质检员
+  - 阶段3：N 个 worker → spawn min(N, 5) 个质检员（避免过多，5 个足以消化）
+  - 阶段4：最多 4 个 agent → spawn 等量质检员
+- 有新校验需求时，优先分配给空闲质检员
+- 所有质检员能力完全相同，校验标准一致
+- 每个质检员校验完成后通知负责人结果（通过/不通过+具体缺失项）
+- 当前阶段所有校验完成后，关闭该阶段全部质检员；下一阶段按需重新 spawn
 
-| 触发点 | 校验对象 | 校验通过后操作 | 不合格处理 |
-|:-------|:---------|:--------------|:-----------|
-| agent-1-route-mapper 完成后 | java-route-mapper 输出 | 负责人发送 shutdown_request 给 agent-1 | 通知 agent-1-route-mapper 重做 |
-| agent-2-auth-audit 完成后 | java-auth-audit 输出 | 负责人发送 shutdown_request 给 agent-2 | 通知 agent-2-auth-audit 重做 |
-| agent-3-vuln-scanner 完成后 | java-vuln-scanner 输出 | 负责人发送 shutdown_request 给 agent-3 | 通知 agent-3-vuln-scanner 重做 |
-| agent-4a-risk-classifier 完成后 | `high_risk_routes.md` | 负责人发送 shutdown_request 给 agent-4a | 通知 agent-4a-risk-classifier 重做，阻塞 agent-5-route-tracer |
-| agent-4b-vuln-aggregator 完成后 | `component_vulnerabilities.md` + `auth_bypass_vulnerabilities.md` | 负责人发送 shutdown_request 给 agent-4b | 通知 agent-4b-vuln-aggregator 重做，阻塞 agent-5-route-tracer |
-| agent-5-route-tracer 分批完成后 | `trace_batch_plan.md` 分批方案 | 负责人发送 shutdown_request 给 agent-5，spawn agent-5-N workers | 通知 agent-5-route-tracer 重新分批 |
-| 所有 agent-5-N 完成后 | route_tracer 所有输出（含鉴权风险章节） | 负责人发送 shutdown_request 给所有 agent-5-N | 通知对应 agent-5-N 补充，阻塞 agent-6a/6b/6c/6d |
-| agent-6a-sql-auditor 完成后 | java-sql-audit 输出（含可利用前置条件） | 负责人发送 shutdown_request 给 agent-6a | 通知 agent-6a-sql-auditor 补充 |
-| agent-6b-xxe-auditor 完成后 | java-xxe-audit 输出（含可利用前置条件） | 负责人发送 shutdown_request 给 agent-6b | 通知 agent-6b-xxe-auditor 补充 |
-| agent-6c-upload-auditor 完成后 | java-file-upload-audit 输出（含可利用前置条件） | 负责人发送 shutdown_request 给 agent-6c | 通知 agent-6c-upload-auditor 补充 |
-| agent-6d-fileread-auditor 完成后 | java-file-read-audit 输出（含可利用前置条件） | 负责人发送 shutdown_request 给 agent-6d | 通知 agent-6d-fileread-auditor 补充 |
-| 全部通过后 | 跨 skill 数据一致性 | 负责人发送 shutdown_request 给 agent-7 | 生成最终 quality_report.md |
+#### 校验触发时机（所有阶段统一：完成一个、校验一个）
+
+| 触发点 | 校验对象 | 分配给 | 校验通过后操作 | 不合格处理 |
+|:-------|:---------|:------|:--------------|:-----------|
+| agent-1 完成后 | java-route-mapper 输出 | 空闲检员 | 关闭 agent-1 | 通知 agent-1 重做 |
+| agent-2 完成后 | java-auth-audit 输出 | 空闲检员 | 关闭 agent-2 | 通知 agent-2 重做 |
+| agent-3 完成后 | java-vuln-scanner 输出 | 空闲检员 | 关闭 agent-3 | 通知 agent-3 重做 |
+| agent-4a 完成后 | `high_risk_routes.md` | 空闲检员 | 关闭 agent-4a | 通知 agent-4a 重做 |
+| agent-4b 完成后 | `component_vulnerabilities.md` + `auth_bypass_vulnerabilities.md` | 空闲检员 | 关闭 agent-4b | 通知 agent-4b 重做 |
+| agent-5 分批完成后 | `trace_batch_plan.md` 分批方案 | 负责人自行检查 | 关闭 agent-5，spawn workers | 通知 agent-5 重新分批 |
+| 每个 agent-5-N 完成后 | 该 worker 的 route_tracer 输出（含鉴权风险章节） | 空闲检员 | 关闭该 worker | 通知该 worker 补充 |
+| 每个 agent-6x 完成后 | 对应 audit 输出（含可利用前置条件） | 空闲检员 | 关闭该 agent-6x | 通知该 agent-6x 补充 |
+| 全部 agent-6x 校验通过后 | 跨 skill 数据一致性 | 任一检员 | 生成 quality_report.md → 关闭 agent-7-x | — |
 
 #### 通用校验方法
 
@@ -633,9 +651,9 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 2. 读取实际输出文件
 3. 逐项检查：文件存在性、章节完整性、内容非空、格式规范
 4. 不合格 → 通知对应 agent 具体缺失项，要求补充
-5. 合格 → 通知负责人启动下一阶段
+5. 合格 → 通知负责人该 agent 校验通过
 
-#### 阶段1 校验（每个 agent 完成后立即独立校验）
+#### 阶段1 校验（每个 agent 完成后立即由空闲检员校验）
 
 **校验 agent-1-route-mapper（java-route-mapper）：**
 - 检查：路由列表表格、参数结构、Burp Suite 请求模板、文件位置标注
@@ -652,7 +670,7 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 
 **三个都通过 → 负责人关闭 agent-1/2/3 → 并行启动 agent-4a-risk-classifier 和 agent-4b-vuln-aggregator**
 
-#### 阶段2 校验（agent-4a 和 agent-4b 完成后独立校验）
+#### 阶段2 校验（每个 agent 完成后立即由空闲检员校验）
 
 **校验 agent-4a-risk-classifier：**
 - 检查 `high_risk_routes.md` 存在且非空
@@ -672,29 +690,33 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 
 **两个都通过 → 启动 agent-5-route-tracer（分配员）**
 
-#### 阶段3 校验（所有 agent-5-N 完成后）
+#### 阶段3 校验（每个 worker 完成后立即由空闲检员校验）
 
-**3a. 校验 agent-5 分批方案（负责人自行检查，无需 agent-7）：**
+**3a. 校验 agent-5 分批方案（负责人自行检查，无需 agent-7-x）：**
 - 检查 `trace_batch_plan.md` 存在且非空
 - P0 和 P1 路由全部包含在分批方案中（不遗漏 P1）
 - 批次大小合理（每批 ≤ 10 条）
 - 通过 → 关闭 agent-5 → spawn agent-5-N workers
 
-**3b. 校验 agent-5-N 输出（agent-7 统一校验所有 worker 输出）：**
+**3b. 逐个校验 agent-5-N 输出（每个 worker 完成后立即由空闲检员校验）：**
 - 逐文件检查：HTTP数据包、层级调用链、参数追踪表、执行路径结论
-- **新增检查**：每个报告必须包含「鉴权风险评估」章节
+- **必须检查**：每个报告必须包含「鉴权风险评估」章节
   - 鉴权状态标注
   - 鉴权绕过风险（如有）
   - 风险等级评估
-- **特殊检查**：grep 所有文件中的 `${`，发现未替换变量则不合格
+- **特殊检查**：grep 该 worker 输出文件中的 `${`，发现未替换变量则不合格
 - 文件数量 = 方法数 + 1（总索引）
+- 通过 → 负责人关闭该 worker
+- 不通过 → 通知该 worker 补充
+
+**3c. 全部 worker 校验通过后，负责人汇总覆盖率：**
 - 追踪覆盖率：已追踪数 / high_risk 建议追踪数（P0+P1） >= 90%
-- 通过 → 负责人关闭所有 agent-5-N → 按 sink 类型按需启动 agent-6a/6b/6c/6d
+- 通过 → 按 sink 类型按需启动 agent-6a/6b/6c/6d
 
-#### 阶段4 校验（agent-6a/6b/6c/6d 各自完成后独立校验）
+#### 阶段4 校验（每个 agent-6x 完成后立即由空闲检员校验）
 
-- 每个 agent-6x 完成后，agent-7-quality-checker 立即使用 Skill 工具加载对应 skill，从 skill 上下文中提取输出规范，逐项检查
-- **新增检查**：每个漏洞报告必须包含「可利用前置条件」章节
+- 每个 agent-6x 完成后，负责人立即将校验任务分配给空闲的 agent-7-x，使用 Skill 工具加载对应 skill，从 skill 上下文中提取输出规范，逐项检查
+- **必须检查**：每个漏洞报告必须包含「可利用前置条件」章节
   - 鉴权要求
   - 鉴权绕过方式（如有）
   - 其他条件
@@ -706,7 +728,7 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 
 #### 最终汇总：生成 `quality_report.md`
 
-整合所有阶段的校验结果，生成最终报告后，负责人发送 shutdown_request 给 agent-7，完成整个流水线。
+全部 agent-6x 校验通过后，负责人将汇总任务分配给任一空闲检员，整合所有阶段的校验结果生成最终报告，然后关闭 agent-7-x，完成整个流水线。
 
 ```markdown
 # 审计质量检查报告
@@ -728,7 +750,10 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 
 ### 阶段3
 - ✅ agent-5-route-tracer: 分批方案校验通过（P0+P1 全覆盖，N 批次）
-- ✅ agent-5-1/5-2/.../5-N: java-route-tracer 10/10 项通过（含鉴权风险透传）
+- ✅ agent-5-1: java-route-tracer 校验通过（含鉴权风险透传）[agent-7-1]
+- ✅ agent-5-2: java-route-tracer 校验通过（含鉴权风险透传）[agent-7-2]
+- ✅ ...（逐个 worker 校验记录）
+- ✅ 追踪覆盖率: 95% >= 90%
 
 ### 阶段4
 - ✅ java-sql-audit: 4/4 项通过（含可利用前置条件）
@@ -773,12 +798,12 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
 ├── file_upload_audit/         # 阶段4 - agent-6c-upload-auditor（含可利用前置条件）
 ├── file_read_audit/           # 阶段4 - agent-6d-fileread-auditor（含可利用前置条件）
 ├── decompiled/                # 反编译输出（多 agent 共享）
-└── quality_report.md          # 阶段5 - agent-7-quality-checker
+└── quality_report.md          # 阶段5 - agent-7-x-quality-checker
 ```
 
 ## Skill 输出规范引用
 
-agent-7-quality-checker 校验时使用 Skill 工具加载对应 skill 获取输出规范：
+agent-7-x 校验时使用 Skill 工具加载对应 skill 获取输出规范：
 
 | 校验对象 | 加载 Skill |
 |:---------|:-----------|
