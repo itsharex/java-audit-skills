@@ -5,7 +5,7 @@ description: Java Web 全链路自动化安全审计流水线。使用 agent tea
 
 # Java 全链路审计流水线
 
-使用 agent team 编排多个 agent（含动态扩展的调用链追踪 worker），分 5 个阶段自动完成 Java Web 项目的完整安全审计。
+使用 agent teams 编排多个 agent（含动态扩展的调用链追踪 worker），分 5 个阶段自动完成 Java Web 项目的完整安全审计。
 
 ## 输入
 
@@ -302,7 +302,7 @@ task-18: agent-7-quality-checker 校验阶段4+汇总  (blockedBy: [14,15,16,17]
   ```http
   GET /admin/;/user/list HTTP/1.1
   Host: target.com
-  ```
+```
 
 ### 2. Spring Security 配置缺陷
 
