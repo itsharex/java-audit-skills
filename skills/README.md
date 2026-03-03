@@ -407,35 +407,37 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 - 自动校验每个 skill 输出质量
 
 **核心功能：**
-1. 使用 agent team 编排 10 个 agent，分 5 个阶段自动完成完整安全审计
+1. 使用 agent team 编排多个 agent（含动态扩展的调用链追踪 worker），分 5 个阶段自动完成完整安全审计
 2. 阶段1：信息收集（路由分析 + 鉴权审计 + 组件漏洞扫描，并行执行）
-3. 阶段2：交叉分析（筛选无鉴权+有漏洞触发点的高危路由）
-4. 阶段3：调用链追踪（按优先级追踪高危路由参数流向）
-5. 阶段4：漏洞深度分析（根据 sink 类型选择对应审计 skill，agent-6a/6b/6c/6d 按需并行）
-6. 阶段5：质量校验（每阶段完成后立即校验，不合格则重做）
+3. 阶段2：交叉分析（风险分级 + 漏洞汇总，并行执行）
+4. 阶段3：调用链追踪（分批并行追踪高危路由参数流向，含鉴权风险透传）
+5. 阶段4：漏洞深度分析（根据 sink 类型选择对应审计 skill，含可利用前置条件，按需并行）
+6. 阶段5：质量校验（每阶段完成后立即校验，不合格则重做，通过后关闭 agent 释放资源）
 
 **流程总览：**
 
 ```
-阶段1: 信息收集（agent-1/2/3 并行）
-  ├─ agent-1: /java-route-mapper   → 全量路由+参数
-  ├─ agent-2: /java-auth-audit     → 路由鉴权映射
-  └─ agent-3: /java-vuln-scanner   → 组件漏洞
-        ↓ agent-7 逐个校验，全部通过后
-阶段2: 交叉分析（agent-4）
-  └─ 筛选无鉴权+有漏洞触发点的高危路由
-        ↓ agent-7 校验
-阶段3: 调用链追踪（agent-5）
-  └─ /java-route-tracer 追踪高危路由参数流向
-        ↓ agent-7 校验
-阶段4: 漏洞深度分析（agent-6a/6b/6c/6d 按需并行）
-  ├─ agent-6a: /java-sql-audit         → SQL注入分析
-  ├─ agent-6b: /java-xxe-audit         → XXE注入分析
-  ├─ agent-6c: /java-file-upload-audit  → 文件上传分析
-  └─ agent-6d: /java-file-read-audit   → 文件读取分析
-        ↓ 各自完成后 agent-7 分别校验
-阶段5: 汇总报告（agent-7）
-  └─ 整合所有校验结果，生成最终 quality_report.md
+阶段1: 信息收集（并行）
+  ├─ agent-1-route-mapper: /java-route-mapper   → 全量路由+参数  → agent-7 校验 → 通过后关闭
+  ├─ agent-2-auth-audit: /java-auth-audit     → 路由鉴权映射    → agent-7 校验 → 通过后关闭
+  └─ agent-3-vuln-scanner: /java-vuln-scanner   → 组件漏洞        → agent-7 校验 → 通过后关闭
+        ↓ 三个校验全部通过后
+阶段2: 交叉分析（并行）
+  ├─ agent-4a-risk-classifier: 无鉴权路由分级（P0/P1） → agent-7 校验 → 通过后关闭
+  └─ agent-4b-vuln-aggregator: 漏洞汇总（组件漏洞+鉴权绕过） → agent-7 校验 → 通过后关闭
+        ↓ 两个校验全部通过后
+阶段3: 调用链追踪（分批并行）
+  ├─ agent-5-route-tracer: 读取 P0+P1 全部高危路由，分批创建追踪任务 → 通过后关闭
+  └─ agent-5-1/5-2/.../5-N: /java-route-tracer 并行追踪各批次路由（含鉴权风险透传） → agent-7 校验 → 通过后关闭
+        ↓
+阶段4: 漏洞深度分析（按需并行）
+  ├─ agent-6a-sql-auditor: /java-sql-audit         → SQL注入分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
+  ├─ agent-6b-xxe-auditor: /java-xxe-audit         → XXE注入分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
+  ├─ agent-6c-upload-auditor: /java-file-upload-audit  → 文件上传分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
+  └─ agent-6d-fileread-auditor: /java-file-read-audit   → 文件读取分析（含可利用前置条件） → agent-7 校验 → 通过后关闭
+        ↓
+阶段5: 汇总报告
+  └─ agent-7-quality-checker: 整合所有校验结果，生成最终 quality_report.md → 完成后关闭
 ```
 
 **使用示例：**
@@ -455,14 +457,19 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 ```
 {project_name}_audit/
-├── route_mapper/        # java-route-mapper 输出
-├── route_tracer/        # java-route-tracer 输出
-├── sql_audit/           # java-sql-audit 输出
-├── auth_audit/          # java-auth-audit 输出
-├── file_upload_audit/   # java-file-upload-audit 输出
-├── file_read_audit/     # java-file-read-audit 输出
-├── xxe_audit/           # java-xxe-audit 输出
-├── vuln_report/         # java-vuln-scanner 输出
-├── high_risk_routes.md  # java-audit-pipeline 交叉分析结果
-└── quality_report.md    # java-audit-pipeline 质量检查报告
+├── route_mapper/              # java-route-mapper 输出
+├── route_tracer/              # java-route-tracer 输出
+├── sql_audit/                 # java-sql-audit 输出
+├── auth_audit/                # java-auth-audit 输出
+├── file_upload_audit/         # java-file-upload-audit 输出
+├── file_read_audit/           # java-file-read-audit 输出
+├── xxe_audit/                 # java-xxe-audit 输出
+├── vuln_report/               # java-vuln-scanner 输出
+├── cross_analysis/            # java-audit-pipeline 交叉分析结果
+│   ├── high_risk_routes.md              # agent-4a 输出
+│   ├── trace_batch_plan.md              # agent-5 分批方案
+│   ├── component_vulnerabilities.md     # agent-4b 输出
+│   └── auth_bypass_vulnerabilities.md   # agent-4b 输出
+├── decompiled/                # 反编译输出（多 agent 共享）
+└── quality_report.md          # java-audit-pipeline 质量检查报告
 ```
