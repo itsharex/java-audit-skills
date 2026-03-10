@@ -210,7 +210,7 @@ java-audit-skills/
 
 ## 交流群
 
-![](assets/WechatIMG988.jpg)
+asdnnj32nsd@foxmail.com 需要进群把微信号发到这个邮箱，拉你进群（群已满200，只能拉人进群）
 
 ## 相关链接
 
