@@ -17,7 +17,7 @@
    - 项目只包含编译后的字节码
    - 依赖的库仅提供 JAR 包
 
-2. **参数类型需要深入分析**
+2. **参数类型需要深入提取**
    - DTO/POJO 类无源码
    - 复杂的泛型类型需要确定具体类型
 
@@ -97,7 +97,7 @@ for class_file in target_classes:
 # 1. 先反编译控制器类
 decompile_files(controller_classes)
 
-# 2. 分析出需要深入的反编译的类型
+# 2. 识别需要深入反编译的类型
 required_types = extract_types_from_controllers()
 
 # 3. 反编译参数类型

@@ -52,7 +52,7 @@ server:
   port: 8080
 ```
 
-**分析要点：**
+**提取要点：**
 - `context-path` 需要添加到所有路由前缀
 - 默认 context-path 为 `/`
 
@@ -68,7 +68,7 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-**分析要点：**
+**提取要点：**
 - 检查 `addViewControllers` 方法中的直接路由映射
 - 检查 `addResourceHandlers` 中的静态资源路径
 
@@ -116,7 +116,7 @@ public class UserController {
 )
 ```
 
-**分析要点：**
+**提取要点：**
 - `params` 和 `headers` 条件需要在请求模板中体现
 - `consumes` 确定请求 Content-Type
 
@@ -304,9 +304,9 @@ public class WebConfig implements WebMvcConfigurer {
 }
 ```
 
-**分析要点：**
+**提取要点：**
 - 静态资源路径也需要记录
-- 可能存在目录遍历风险
+- 存在目录遍历漏洞，需记录该路径
 
 ---
 
@@ -323,9 +323,9 @@ public class AuthInterceptor implements HandlerInterceptor {
 }
 ```
 
-**分析要点：**
-- 拦截器可能限制某些路径的访问
-- 需要记录路径拦截规则
+**提取要点：**
+- 拦截器限制路径访问，需记录拦截规则
+- 记录受限路径列表
 
 ---
 
@@ -347,6 +347,6 @@ public class SecurityConfig {
 }
 ```
 
-**分析要点：**
+**提取要点：**
 - 记录公开访问的路径
 - 记录需要特定角色的路径

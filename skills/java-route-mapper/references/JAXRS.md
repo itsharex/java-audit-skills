@@ -181,7 +181,7 @@ public class UserParams {
 public Response login(@BeanParam UserParams params) { }
 ```
 
-**分析要点：**
+**提取要点：**
 - 需要进一步分析 Bean 类的字段
 - 可以混合多种参数来源
 
@@ -341,7 +341,7 @@ public Response getData(@HeaderParam("Accept") String accept) {
 public Response create(UserDto dto) { }
 ```
 
-**分析要点：**
+**提取要点：**
 - `@Consumes` 确定请求 Content-Type
 - `@Produces` 确定响应 Content-Type
 
@@ -377,6 +377,6 @@ public class AuthFilter implements ContainerRequestFilter {
 }
 ```
 
-**分析要点：**
+**提取要点：**
 - 记录路径拦截规则
-- 可能影响请求可达性
+- 影响请求可达性，需记录拦截规则
