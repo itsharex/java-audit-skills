@@ -7,8 +7,8 @@
 - [危险模式检测](#危险模式检测)
 - [安全模式识别](#安全模式识别)
 - [常见漏洞场景](#常见漏洞场景)
-- [XML Mapper 审计](#xml-mapper-审计)
-- [注解方式审计](#注解方式审计)
+- [XML Mapper 检查](#xml-mapper-检查)
+- [注解方式检查](#注解方式检查)
 
 ---
 
@@ -105,8 +105,8 @@ grep -rn '@Delete.*\${' --include="*.java"
 
 ### 危险模式清单
 
-| 模式 | 示例 | 风险等级 |
-|------|------|----------|
+| 模式 | 示例 | 注入危害等级 |
+|------|------|------------|
 | 直接使用 ${} | `WHERE id = ${id}` | **高危** |
 | LIKE 拼接 | `LIKE '%${keyword}%'` | **高危** |
 | ORDER BY | `ORDER BY ${column}` | **高危** |
@@ -188,7 +188,7 @@ grep -rn '@Delete.*\${' --include="*.java"
     SELECT * FROM users ORDER BY ${orderColumn} ${orderDir}
 </select>
 
-<!-- ⚠️ 需要白名单校验 -->
+<!-- ⚠️ 必须白名单校验 -->
 <!-- 在 Java 代码中校验 orderColumn -->
 public List<User> findAll(String orderColumn) {
     if (!ALLOWED_COLUMNS.contains(orderColumn)) {
@@ -265,9 +265,9 @@ public List<Map> findFromTable(String tableName, int id) {
 
 ---
 
-## XML Mapper 审计
+## XML Mapper 检查
 
-### 审计步骤
+### 检查步骤
 
 1. **定位所有 Mapper XML 文件**
    ```bash
@@ -301,7 +301,7 @@ public List<Map> findFromTable(String tableName, int id) {
 
 ---
 
-## 注解方式审计
+## 注解方式检查
 
 ### 常用注解
 
@@ -312,7 +312,7 @@ public List<Map> findFromTable(String tableName, int id) {
 @Delete("DELETE FROM users WHERE id = #{id}")
 ```
 
-### 审计步骤
+### 检查步骤
 
 1. **搜索所有 SQL 注解**
    ```bash
@@ -330,7 +330,7 @@ public List<Map> findFromTable(String tableName, int id) {
    @SelectProvider(type = UserSqlProvider.class, method = "findByCondition")
    List<User> findByCondition(Map<String, Object> params);
 
-   // 需要审计 Provider 类中的 SQL 构建逻辑
+   // 需要检查 Provider 类中的 SQL 构建逻辑
    public class UserSqlProvider {
        public String findByCondition(Map<String, Object> params) {
            // 检查这里是否有拼接
@@ -340,15 +340,15 @@ public List<Map> findFromTable(String tableName, int id) {
 
 ---
 
-## 修复建议
+## 修复要求
 
-### 通用原则
+### 必须遵守的规范
 
 1. **始终使用 #{}**，除非确实需要动态标识符
 2. **动态标识符使用白名单**校验
 3. **LIKE 使用 CONCAT + #{}**
 4. **IN 使用 foreach 标签**
-5. **定期审计 Mapper 文件**
+5. **定期检查 Mapper 文件**
 
 ### ${} 合法使用场景
 

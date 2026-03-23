@@ -5,8 +5,8 @@
 - [何时反编译](#何时反编译)
 - [反编译工具使用](#反编译工具使用)
 - [SQL 相关类识别与定位](#sql-相关类识别与定位)
-- [反编译结果分析](#反编译结果分析)
-- [常见问题](#常见问题)
+- [反编译结果提取](#反编译结果提取)
+- [常见故障](#常见故障)
 
 ---
 
@@ -23,7 +23,7 @@
    - SQL 工具类
    - 数据访问层实现
 
-3. **需要分析 SQL 执行逻辑**
+3. **需要提取 SQL 拼接点**
    - 动态 SQL 构建
    - SQL 拼接逻辑
    - 参数处理方式
@@ -202,9 +202,9 @@ hibernate_classes = [
 
 ---
 
-## 反编译结果分析
+## 反编译结果提取
 
-### JDBC 类分析要点
+### JDBC 类识别要点
 
 ```java
 // 反编译后的 UserDao 示例
@@ -248,13 +248,13 @@ public class UserDao {
 
 **提取信息：**
 
-| 信息类型 | 内容 | 风险评估 |
-|----------|------|----------|
-| findById | 字符串拼接 | **高危** |
+| 方法名 | SQL 构建方式 | 注入判定 |
+|--------|------------|---------|
+| findById | 字符串拼接 | **高危注入点** |
 | findByIdSafe | PreparedStatement | 安全 |
-| search | 动态 StringBuilder | **高危** |
+| search | 动态 StringBuilder | **高危注入点** |
 
-### MyBatis Mapper 类分析要点
+### MyBatis Mapper 类检查要点
 
 ```java
 // 反编译后的 UserMapper 示例
@@ -275,7 +275,7 @@ public interface UserMapper {
 }
 ```
 
-### Hibernate Repository 分析要点
+### Hibernate Repository 检查要点
 
 ```java
 // 反编译后的 UserRepository 示例
@@ -326,7 +326,7 @@ sql_classes = parse_spring_beans() + parse_mybatis_mappers()
 for cls in sql_classes:
     decompile_file(cls)
 
-# 步骤 3: 分析依赖，反编译 SQL 相关的依赖类
+# 步骤 3: 从依赖中定位包含 SQL 拼接的类，判断是否需要反编译
 dependencies = extract_sql_dependencies(sql_classes)
 for dep in dependencies:
     if is_sql_related(dep):
@@ -368,9 +368,9 @@ for pkg in sql_packages:
 
 ---
 
-## 常见问题
+## 常见故障
 
-### 问题 1: 反编译失败
+### 故障 1: 反编译失败
 
 **可能原因：**
 - Java 版本不匹配
@@ -389,7 +389,7 @@ mcp__java-decompile-mcp__check_cfr_status()
 mcp__java-decompile-mcp__download_cfr_tool()
 ```
 
-### 问题 2: MyBatis 注解丢失
+### 故障 2: MyBatis 注解丢失
 
 **表现：**
 ```java
@@ -403,7 +403,7 @@ mcp__java-decompile-mcp__download_cfr_tool()
 - 编译时注解可能丢失
 - 需结合 XML 配置文件分析
 
-### 问题 3: 泛型信息丢失
+### 故障 3: 泛型信息丢失
 
 **表现：**
 ```java
@@ -431,7 +431,7 @@ List users = findAll();
 来源: **反编译 WEB-INF/classes/com/example/dao/UserDao.class**
 框架: JDBC
 
-问题描述:
+漏洞特征:
 - 使用字符串拼接构建 SQL
 - 参数 id 直接拼接到查询语句
 

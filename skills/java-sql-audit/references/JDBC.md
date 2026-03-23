@@ -5,7 +5,7 @@
 - [JDBC 基础概念](#jdbc-基础概念)
 - [危险模式检测](#危险模式检测)
 - [安全模式识别](#安全模式识别)
-- [代码审计要点](#代码审计要点)
+- [代码检查要点](#代码检查要点)
 - [常见漏洞场景](#常见漏洞场景)
 
 ---
@@ -14,11 +14,11 @@
 
 ### 核心类
 
-| 类 | 作用 | 注入风险 |
-|---|------|----------|
-| `Statement` | 执行静态 SQL | 高（无参数化） |
-| `PreparedStatement` | 执行预编译 SQL | 低（支持参数化） |
-| `CallableStatement` | 执行存储过程 | 中（取决于使用方式） |
+| 类 | 作用 | 参数化支持 |
+|---|------|-----------|
+| `Statement` | 执行静态 SQL | 不支持（高危注入点） |
+| `PreparedStatement` | 执行预编译 SQL | 支持（安全） |
+| `CallableStatement` | 执行存储过程 | 部分支持（取决于使用方式） |
 
 ### 识别特征
 
@@ -127,9 +127,9 @@ pstmt.setInt(2, age);
 
 ---
 
-## 代码审计要点
+## 代码检查要点
 
-### 审计流程
+### 检查流程
 
 ```
 1. 搜索所有 Statement/PreparedStatement 使用
@@ -156,14 +156,14 @@ grep -rn "createStatement\|prepareStatement" --include="*.java"
 grep -rn "\"SELECT\|\"INSERT\|\"UPDATE\|\"DELETE" --include="*.java" | grep "+"
 ```
 
-### 风险判断矩阵
+### 漏洞判断矩阵
 
-| Statement 类型 | SQL 构建方式 | 参数来源 | 风险等级 |
-|---------------|-------------|----------|----------|
-| Statement | 字符串拼接 | 用户输入 | **高危** |
-| Statement | 字符串拼接 | 硬编码 | 低 |
+| Statement 类型 | SQL 构建方式 | 参数来源 | 注入判定结果 |
+|---------------|-------------|----------|------------|
+| Statement | 字符串拼接 | 用户输入 | **高危注入点** |
+| Statement | 字符串拼接 | 硬编码 | 无注入风险 |
 | PreparedStatement | 占位符 | 用户输入 | 安全 |
-| PreparedStatement | 拼接 + 占位符混用 | 用户输入 | **高危** |
+| PreparedStatement | 拼接 + 占位符混用 | 用户输入 | **高危注入点** |
 
 ---
 
@@ -176,7 +176,7 @@ grep -rn "\"SELECT\|\"INSERT\|\"UPDATE\|\"DELETE" --include="*.java" | grep "+"
 String table = request.getParameter("table");
 String sql = "SELECT * FROM " + table;  // 无法参数化
 
-// ⚠️ 需要白名单校验
+// ⚠️ 必须白名单校验
 String table = request.getParameter("table");
 if (!ALLOWED_TABLES.contains(table)) {
     throw new IllegalArgumentException("Invalid table");
@@ -191,7 +191,7 @@ String sql = "SELECT * FROM " + table;
 String orderBy = request.getParameter("sort");
 String sql = "SELECT * FROM users ORDER BY " + orderBy;
 
-// ⚠️ 需要白名单校验
+// ⚠️ 必须白名单校验
 String orderBy = request.getParameter("sort");
 if (!ALLOWED_COLUMNS.contains(orderBy)) {
     orderBy = "id";  // 默认值
@@ -251,9 +251,9 @@ pstmt.executeBatch();
 
 ---
 
-## 修复建议
+## 修复要求
 
-### 通用原则
+### 必须遵守的规范
 
 1. **始终使用 PreparedStatement**，避免 Statement
 2. **使用 ? 占位符**，避免字符串拼接
