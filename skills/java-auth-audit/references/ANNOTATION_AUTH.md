@@ -21,7 +21,7 @@
 - 易于理解和维护
 - 编译时可检查
 
-### 风险
+### 已知漏洞
 
 - 注解遗漏导致未授权访问
 - 注解配置错误
@@ -301,7 +301,7 @@ public class OrderService {
 
 ```java
 // ⚠️ 逻辑错误：AND 写成 OR
-@PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")  // 应该是 and
+@PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")  // 必须改为 and
 public void superAdminOnly() { }
 
 // ⚠️ 角色名错误
@@ -356,26 +356,26 @@ public class UserService {
 
 ```markdown
 === [ANN-001] 敏感接口缺少权限注解 ===
-风险等级: 高
+漏洞等级: 高
 位置: AdminController.deleteUser (AdminController.java:45)
 路由: DELETE /admin/users/{id}
 
-问题描述:
+漏洞描述:
 - 该删除接口无权限注解保护
 - 类级别也无默认权限控制
-- 可能导致未授权删除用户
+- 可导致未授权删除用户
 
-建议修复:
-- 添加 @RequiresRoles("admin") 或 @PreAuthorize("hasRole('ADMIN')")
+修复步骤:
+- 必须添加 @RequiresRoles("admin") 或 @PreAuthorize("hasRole('ADMIN')")
 - 或在类级别添加默认权限注解
 
 ---
 
 === [ANN-002] 内部调用绕过权限检查 ===
-风险等级: 中
+漏洞等级: 中
 位置: OrderService.processRefund (OrderService.java:78)
 
-问题描述:
+漏洞描述:
 - processRefund 方法内部调用 cancelOrder
 - cancelOrder 有 @PreAuthorize 注解
 - 内部调用不经过 AOP 代理，权限检查被绕过
@@ -388,7 +388,7 @@ public void processRefund(Long orderId) {
 @PreAuthorize("hasRole('ADMIN')")
 public void cancelOrder(Long orderId) { }
 
-建议修复:
+修复步骤:
 - 注入自身代理: @Autowired private OrderService self;
 - 使用 self.cancelOrder(orderId);
 - 或提取到单独的服务类

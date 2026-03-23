@@ -225,7 +225,7 @@ grep -r "implements Filter\|implements HandlerInterceptor" --include="*.java"
 
 ## 反编译结果分析
 
-### Filter 类分析要点
+### Filter 类提取要点
 
 ```java
 // 反编译后的 AuthFilter 示例
@@ -285,14 +285,14 @@ public class AuthFilter implements Filter {
 
 **提取信息：**
 
-| 信息类型 | 内容 | 风险评估 |
+| 信息类型 | 内容 | 漏洞标记 |
 |----------|------|----------|
 | 白名单路径 | `/login`, `/public`, `/static`, `/api/health` | 检查是否过宽 |
-| 匹配方式 | `startsWith` | 可能被绕过 |
-| 鉴权方式 | Session 校验 | 仅认证，无授权 |
-| 缺失检查 | 无角色/权限校验 | 可能越权 |
+| 匹配方式 | `startsWith` | 可被绕过 ⚠️ |
+| 鉴权方式 | Session 校验 | 仅认证，无授权 ⚠️ |
+| 缺失检查 | 无角色/权限校验 | 存在越权漏洞 ⚠️ |
 
-### Interceptor 类分析要点
+### Interceptor 类提取要点
 
 ```java
 // 反编译后的 AuthInterceptor 示例
@@ -342,14 +342,14 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 **提取信息：**
 
-| 信息类型 | 内容 | 风险评估 |
+| 信息类型 | 内容 | 漏洞标记 |
 |----------|------|----------|
-| 排除路径 | `/login`, `/register`, `/captcha` | 精确匹配，较安全 |
+| 排除路径 | `/login`, `/register`, `/captcha` | 精确匹配，安全 ✅ |
 | 鉴权方式 | JWT Token | 需检查密钥管理 |
-| Token 位置 | Authorization Header | 标准做法 |
-| 潜在问题 | 硬编码密钥 | 高风险 |
+| Token 位置 | Authorization Header | 标准做法 ✅ |
+| 潜在问题 | 硬编码密钥 | 存在密钥泄露漏洞 ⚠️ |
 
-### Shiro Realm 分析要点
+### Shiro Realm 提取要点
 
 ```java
 // 反编译后的 CustomRealm 示例
@@ -411,7 +411,7 @@ entry_classes = parse_web_xml_filters() + parse_spring_interceptors()
 for cls in entry_classes:
     decompile_file(cls)
 
-# 步骤 3: 分析依赖，反编译权限相关的依赖类
+# 步骤 3: 提取依赖，反编译权限相关的依赖类
 dependencies = extract_auth_dependencies(entry_classes)
 for dep in dependencies:
     if is_auth_related(dep):

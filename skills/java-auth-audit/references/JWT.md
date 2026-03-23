@@ -299,7 +299,7 @@ if (user == null || user.isDisabled()) {
 
 - [ ] 过期时间是否合理 (Access Token <= 15min)
 - [ ] 是否包含敏感信息
-- [ ] 算法选择是否安全 (推荐 RS256)
+- [ ] 算法选择是否安全 (必须使用 RS256 或 HS256 with 强密钥)
 
 ### Token 验证
 
@@ -319,47 +319,47 @@ if (user == null || user.isDisabled()) {
 ## 输出示例
 
 ```markdown
-=== [JWT-001] 密钥硬编码 ===
-风险等级: 高
+=== [JWT-001] 密钥硬编码漏洞 ===
+漏洞等级: 高
 位置: JwtUtil.java:15
 
-问题描述:
+漏洞描述:
 - JWT 签名密钥硬编码在源码中
 - 密钥: "mySecretKey123"
 - 攻击者获取源码后可伪造任意 Token
 
-建议修复:
-- 从环境变量或配置中心读取密钥
-- 使用足够强度的随机密钥
+修复步骤:
+- 必须从环境变量或配置中心读取密钥
+- 必须使用足够强度的随机密钥（≥ 256 bits）
 
 ---
 
 === [JWT-002] 过期时间过长 ===
-风险等级: 中
+漏洞等级: 中
 位置: JwtUtil.java:28
 
-问题描述:
+漏洞描述:
 - Access Token 过期时间为 30 天
-- Token 泄露后风险窗口过大
+- Token 泄露后漏洞利用窗口过大
 
 当前配置:
 .setExpiration(new Date(System.currentTimeMillis() + 86400000L * 30))
 
-建议修复:
-- Access Token 过期时间设为 15-30 分钟
-- 使用 Refresh Token 机制续期
+修复步骤:
+- 必须将 Access Token 过期时间设为 15-30 分钟
+- 必须使用 Refresh Token 机制续期
 
 ---
 
 === [JWT-003] 无 Token 吊销机制 ===
-风险等级: 中
+漏洞等级: 中
 位置: JwtFilter.java
 
-问题描述:
+漏洞描述:
 - 系统无法使已签发的 Token 失效
 - 用户修改密码、被禁用后旧 Token 仍有效
 
-建议修复:
+修复步骤:
 - 实现 Token 黑名单机制
 - 或在 Token 中包含密码版本号，密码修改后旧 Token 失效
 ```

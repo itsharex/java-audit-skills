@@ -322,7 +322,7 @@ if (!sessionIp.equals(currentIp)) {
 
 ### Session 配置
 
-- [ ] Session 超时时间是否合理 (建议 15-30 分钟)
+- [ ] Session 超时时间是否合理 (必须 ≤ 30 分钟)
 - [ ] 是否配置了并发 Session 控制
 - [ ] 是否使用安全的 Session ID 生成器
 
@@ -350,19 +350,19 @@ if (!sessionIp.equals(currentIp)) {
 ## 输出示例
 
 ```markdown
-=== [SESS-001] Session 固定攻击风险 ===
-风险等级: 高
+=== [SESS-001] Session 固定攻击漏洞 ===
+漏洞等级: 高
 位置: LoginController.login (LoginController.java:45)
 
-问题描述:
+漏洞描述:
 - 登录成功后未更换 Session ID
-- 存在 Session 固定攻击风险
+- 存在 Session 固定攻击漏洞
 
 当前代码:
 HttpSession session = request.getSession();
 session.setAttribute("user", user);
 
-建议修复:
+修复步骤:
 HttpSession oldSession = request.getSession(false);
 if (oldSession != null) {
     oldSession.invalidate();
@@ -373,32 +373,32 @@ session.setAttribute("user", user);
 ---
 
 === [SESS-002] Cookie 缺少 HttpOnly 属性 ===
-风险等级: 中
+漏洞等级: 中
 位置: web.xml / application.properties
 
-问题描述:
+漏洞描述:
 - Session Cookie 未设置 HttpOnly 属性
 - JavaScript 可以访问 Cookie
-- 增加 XSS 攻击窃取 Session 的风险
+- XSS 攻击可窃取 Session
 
-建议修复:
+修复步骤:
 # application.properties
 server.servlet.session.cookie.http-only=true
 
 ---
 
 === [SESS-003] Session 超时时间过长 ===
-风险等级: 低
+漏洞等级: 低
 位置: web.xml:25
 
-问题描述:
+漏洞描述:
 - Session 超时时间设置为 24 小时
-- 风险窗口过大
+- 漏洞利用窗口过大
 
 当前配置:
 <session-timeout>1440</session-timeout>
 
-建议修复:
-- 将超时时间缩短到 30 分钟
+修复步骤:
+- 必须将超时时间缩短到 30 分钟
 - 或实现滑动过期机制
 ```
