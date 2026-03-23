@@ -176,7 +176,7 @@ public class FileController {
 
 **提取信息：**
 
-| 信息类型 | 内容 | 风险评估 |
+| 信息类型 | 内容 | 漏洞判定 |
 |----------|------|----------|
 | download | 直接使用 filePath 参数 | **高危** |
 | readFile | 路径拼接未校验 | **高危** |
@@ -302,9 +302,9 @@ for pkg in file_packages:
 
 ---
 
-## 常见问题
+## 常见故障
 
-### 问题 1: 反编译失败
+### 故障 1: 反编译失败
 
 **可能原因：**
 - Java 版本不匹配
@@ -323,7 +323,7 @@ mcp__java-decompile-mcp__check_cfr_status()
 mcp__java-decompile-mcp__download_cfr_tool()
 ```
 
-### 问题 2: 注解丢失
+### 故障 2: 注解丢失
 
 **表现：**
 ```java
@@ -348,7 +348,7 @@ mcp__java-decompile-mcp__download_cfr_tool()
 位置: FileController.download (FileController.java:25)
 来源: **反编译 WEB-INF/classes/com/example/controller/FileController.class**
 
-问题描述:
+漏洞描述:
 - 直接使用用户输入的 filePath 参数
 - 未进行路径校验
 - 可导致任意文件读取
