@@ -56,13 +56,13 @@ python3 scripts/scan_dependencies.py <目标路径> \
 - 🟡 **Medium**: 计划修复（JDBC 驱动漏洞、Guava 等）
 - 🔵 **Low**: 建议升级（过时组件）
 
-### 5. AI 漏洞触发点检查（重要）
+### 5. AI 漏洞触发点分析（重要）
 
-扫描完成后，**必须**读取生成的报告文件，为检测到的漏洞生成触发点检查结果，并追加到报告末尾。
+扫描完成后，**必须**基于扫描结果，按照 `references/OUTPUT_TEMPLATE.md` 模板填充完整报告（**单个文件**）。
 
-#### 检查步骤
+#### 分析步骤
 
-1. 读取生成的报告文件（如 `xxx_audit/vuln_report/xxx_vuln_report_xxx.md`）
+1. 读取 Python 脚本生成的扫描结果
 2. **识别项目运行环境**：
    - 检查项目使用的框架：Spring MVC / Spring Boot / Struts2 / Servlet / JAX-RS 等
    - 检查容器类型：Tomcat / Jetty / Undertow / WebLogic / WildFly 等
@@ -72,16 +72,14 @@ python3 scripts/scan_dependencies.py <目标路径> \
    - 识别文件上传、JSON/XML 解析、用户输入处理等关键入口
    - 结合 java-route-mapper 技能（如已加载）获取完整路由信息
 4. 提取检测到的**唯一漏洞组件**列表（去重）
-5. 为每个高危组件生成以下检查结果：
-   - **常见触发点**：该漏洞在代码中的触发位置
-   - **危险代码模式**：容易触发漏洞的代码写法（结合当前框架环境）
-   - **攻击向量**：攻击者如何利用此漏洞
-   - **受影响的路由/接口**：根据路由分析，列出可能受影响的具体接口
-   - **检测方法**：在代码中搜索漏洞触发点的 grep 命令
-6. 追加检查结果到报告：
-   - 使用 Read 工具读取完整报告内容
-   - 将检查结果拼接到末尾
-   - 使用 Write 工具写入完整内容（避免 Edit 匹配失败）
+5. **按模板填充报告**，每个漏洞的详情区块必须包含：
+   - 触发条件
+   - 危险代码模式（java 代码块）
+   - 攻击向量
+   - 受影响的路由/接口
+   - 代码搜索命令（bash 代码块）
+   - 修复建议
+6. 使用 Write 工具将完整报告写入 **单个文件**
 
 #### 环境识别方法
 
@@ -114,52 +112,6 @@ python3 scripts/scan_dependencies.py <目标路径> \
 - Struts2 + Spring：检查 `struts-spring-plugin.jar` 和 Spring 配置
 - Spring MVC + CXF：检查 `\<jaxws:endpoint\>` 和 `@Controller` 共存
 - Servlet + Filter 链：检查 `web.xml` 中的 filter-mapping 顺序
-
-#### 追加内容格式
-
-追加到报告末尾的内容**必须**包含以下结构：
-
-**标题：** `## 🔍 漏洞触发点检查（AI 生成）`
-
-**环境信息：** `### 🌐 项目环境` - 列出识别到的框架和容器
-
-**每个组件的检查结果包含：**
-
-1. **组件标题** - 如：`### Struts2 (struts2-core 2.5.17)`
-
-2. **常见触发点** - 列出该漏洞在代码中的触发位置
-
-3. **危险代码模式** - 展示容易触发漏洞的代码写法（使用 java 代码块）
-
-4. **攻击向量** - 列出攻击者利用此漏洞的方式
-
-5. **受影响的路由** - 根据环境检查，列出可能受影响的接口路径
-
-6. **代码搜索命令** - 提供 grep 命令帮助定位漏洞代码（使用 bash 代码块）
-
-#### 示例：Bouncy Castle 检查
-
-    ### Bouncy Castle (bcprov-jdk15on 1.53)
-
-    **常见触发点：**
-    - LDAP 证书验证处理
-    - X.509 证书 DN 解析
-    - CertStore 操作
-
-    **危险代码模式：**
-
-        // 用户输入直接用于证书查询
-        X509CertSelector selector = new X509CertSelector();
-        selector.setSubject(userInput);  // 危险：用户输入未过滤
-        CertStore store = CertStore.getInstance("LDAP", params);
-
-    **攻击向量：**
-    - CVE-2024-30171: 通过证书 DN 中的特殊字符进行 LDAP 注入
-
-    **代码搜索命令：**
-
-        grep -r "LdapCertStore\|CertStore.*LDAP" --include="*.java"
-        grep -r "X509CertSelector" --include="*.java"
 
 ## 漏洞规则覆盖
 
@@ -201,11 +153,22 @@ python3 scripts/scan_dependencies.py /path/to/webapp \
 
 ### 输出报告结构
 
+> **输出约束（不可违反）：**
+> 1. **输出为单个文件** — 不得拆分为多个文件
+> 2. 文件命名格式: `{project_name}_vuln_report_{YYYYMMDD_HHMMSS}.md`
+> 3. 必须严格按照 `references/OUTPUT_TEMPLATE.md` 模板填充输出
+> 4. 不得增删章节、不得调整章节顺序
+
+**输出模板**: [references/OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md)
+
 ```
-webapp_audit/vuln_report/
-└── webapp_vuln_report_20260204_101747.md
-    ├── 扫描概览
-    ├── 模块漏洞摘要
-    ├── 漏洞详情（按模块分组）
-    └── 🔍 漏洞触发点检查（AI 生成）  <-- 自动追加
+{project_name}_audit/vuln_report/
+└── {project_name}_vuln_report_{YYYYMMDD_HHMMSS}.md   ← 仅此 1 个文件
+    ├── 1. 扫描概述
+    ├── 2. 风险统计
+    ├── 3. 组件漏洞映射表
+    ├── 4. 漏洞详情（含触发条件、危险代码、攻击向量、搜索命令）
+    └── 5. 审计结论
 ```
+
+通用输出规范参考: [shared/OUTPUT_STANDARD.md](../shared/OUTPUT_STANDARD.md)
