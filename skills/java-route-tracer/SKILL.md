@@ -364,6 +364,20 @@ mcp__java-decompile-mcp__decompile_files(
 
 ## 输出格式
 
+**严格按照 references/ 目录中的填充式模板生成输出文件。**
+
+| 场景 | 模板 | 文件命名 |
+|------|------|---------|
+| 第 1 个接口（完整版） | [OUTPUT_TEMPLATE_FULL.md](references/OUTPUT_TEMPLATE_FULL.md) | `{project_name}_trace_{method_name}_{YYYYMMDD_HHMMSS}.md` |
+| 第 2+ 个接口（简化版） | [OUTPUT_TEMPLATE_SIMPLE.md](references/OUTPUT_TEMPLATE_SIMPLE.md) | `{project_name}_trace_{method_name}_{YYYYMMDD_HHMMSS}.md` |
+| 多方法索引 | [OUTPUT_TEMPLATE_INDEX.md](references/OUTPUT_TEMPLATE_INDEX.md) | `{project_name}_trace_all_methods_{YYYYMMDD_HHMMSS}.md` |
+
+**关键规则：**
+- 所有【填写】占位符必须替换为实际内容
+- 每个方法必须独立追踪到 Sink，禁止复用其他方法结论
+- 多方法路由必须生成索引文件
+- 通用规范参考: [shared/OUTPUT_STANDARD.md](../shared/OUTPUT_STANDARD.md)
+
 ### 单方法路由
 
 **文件命名：** `{项目名}_audit/route_tracer/{路由名}/{项目名}_trace_{路由标识}_{时间戳}.md`

@@ -655,130 +655,12 @@ java-sql-audit                    java-route-tracer
 
 ## 输出格式
 
-### 综合报告模板（{project_name}_sql_audit_{timestamp}.md）
+**严格按照 [references/OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) 中的填充式模板生成输出文件。**
 
-```markdown
-# {项目名称} - SQL 注入审计报告
-
-生成时间: {timestamp}
-分析路径: {project_path}
-
----
-
-## 1. 审计概述
-
-| 项目 | 信息 |
-|------|------|
-| 审计范围 | {project_path} |
-| SQL 框架 | {JDBC/MyBatis/Hibernate} |
-| 分析方法 | 静态代码审计 + 数据流分析 |
-
----
-
-## 2. 风险统计
-
-| 严重等级 | CVSS | 数量 | 说明 |
-|----------|------|------|------|
-| 🔴 C (Critical) | 9.0-10.0 | {count} | 可直接导致系统沦陷 |
-| 🟠 H (High) | 7.0-8.9 | {count} | 可造成重大损害 |
-| 🟡 M (Medium) | 4.0-6.9 | {count} | 可造成一定损害 |
-| 🔵 L (Low) | 0.1-3.9 | {count} | 安全加固建议 |
-
----
-
-## 3. SQL 操作映射表
-
-| 序号 | 类名 | 方法 | 框架 | SQL类型 | 参数化状态 | 可利用性 |
-|------|------|------|------|---------|------------|----------|
-| 1 | UserMapper | findById | MyBatis | SELECT | ✅ 安全 | - |
-| 2 | UserMapper | findByName | MyBatis | SELECT | ❌ 危险 | ⚠️ 待验证 |
-
----
-
-## 4. 高危风险详情
-
-### [{C/H/M/L}-SQL-{序号}] {风险标题}
-
-| 项目 | 信息 |
-|------|------|
-| 严重等级 | {🔴/🟠/🟡/🔵} {Critical/High/Medium/Low} (CVSS {score}) |
-| 可达性 (R) | {0-3} - {判定理由} |
-| 影响范围 (I) | {0-3} - {判定理由} |
-| 利用复杂度 (C) | {0-3} - {判定理由} |
-| 可利用性 | ✅ 已确认 / ⚠️ 待验证 / ❌ 不可利用 / 🔍 环境依赖 |
-| 位置 | {ClassName.method} ({file}:{line}) |
-| 框架 | {JDBC/MyBatis/Hibernate} |
-
-#### 执行条件分析
-
-| 项目 | 值 |
-|------|-----|
-| 分支条件 | `if (this.isOracle())` |
-| Oracle 分支 | 调用 getOracleSql() → SQL 拼接 |
-| MySQL 分支 | `return ""` → 不执行 |
-| 目标环境 | {MySQL/Oracle/未知} |
-| **结论** | {已确认可利用/不可利用/需确认环境} |
-
-#### 漏洞代码
-
-\```java
-// 危险代码片段
-String sql = "SELECT * FROM users WHERE id = " + id;
-\```
-
-#### 数据流分析
-
-\```
-用户输入: {Controller 入口}
-     ↓
-参数传递: {Service 调用}
-     ↓
-SQL 执行: {DAO/Mapper 方法}
-     ↓
-  ┌────┴────┐
-[if Oracle]  [else]
-     ↓         ↓
-SQL拼接    return ""
-\```
-
-#### 验证 PoC
-
-\```http
-GET /api/users?id=1' OR '1'='1 HTTP/1.1
-Host: {{host}}
-\```
-
-#### 建议修复
-
-\```java
-String sql = "SELECT * FROM users WHERE id = ?";
-PreparedStatement pstmt = conn.prepareStatement(sql);
-pstmt.setString(1, id);
-\```
-
----
-
-## 5. 验证 Payload 参考
-
-| 注入类型 | 测试 Payload | 预期结果 |
-|----------|--------------|----------|
-| 基于错误 | `'` | 数据库错误信息 |
-| 布尔盲注 | `1' AND '1'='1` | 正常响应 |
-| 时间盲注 | `1' AND SLEEP(5)--` | 延迟响应 |
-| UNION 注入 | `1' UNION SELECT 1,2,3--` | 额外数据 |
-
----
-
-## 6. 审计结论
-
-| 统计项 | 数量 |
-|--------|------|
-| 总 SQL 操作数 | {count} |
-| 安全操作 | {count} |
-| 危险操作 | {count} |
-| 可利用漏洞 | {count} |
-| 环境依赖漏洞 | {count} |
-```
+- 文件名格式: `{project_name}_sql_audit_{YYYYMMDD_HHMMSS}.md`
+- 不得修改模板结构、不得增删章节、不得调整顺序
+- 所有【填写】占位符必须替换为实际内容
+- 通用规范参考: [shared/OUTPUT_STANDARD.md](../shared/OUTPUT_STANDARD.md)
 
 ---
 
@@ -802,12 +684,13 @@ pstmt.setString(1, id);
 - [ ] 所有 Hibernate HQL 拼接已检测
 
 ### 报告完整性检查
-- [ ] **综合审计报告已生成**
+- [ ] **综合审计报告已生成，且通过 OUTPUT_TEMPLATE.md 末尾的自检清单**
 
 ---
 
 ## 参考资料
 
+- [OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) - 输出报告填充式模板
 - [JDBC.md](references/JDBC.md) - JDBC SQL 注入审计详解
 - [MYBATIS.md](references/MYBATIS.md) - MyBatis SQL 注入审计详解
 - [HIBERNATE.md](references/HIBERNATE.md) - Hibernate SQL 注入审计详解

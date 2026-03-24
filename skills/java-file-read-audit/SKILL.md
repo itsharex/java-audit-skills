@@ -403,143 +403,12 @@ grep -r "download\|readFile\|getFile" --include="*.java"
 
 ## 输出格式
 
-### 综合报告模板
+**严格按照 [references/OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) 中的填充式模板生成输出文件。**
 
-```markdown
-# {项目名称} - 文件读取漏洞审计报告
-
-生成时间: {timestamp}
-分析路径: {project_path}
-
----
-
-## 1. 审计概述
-
-| 项目 | 信息 |
-|------|------|
-| 审计范围 | {project_path} |
-| 文件读取方法 | {BufferedReader/Scanner/Files} |
-| 检查方法 | 静态代码审计 + 数据流追踪 |
-
----
-
-## 2. 漏洞统计
-
-| 严重等级 | CVSS | 数量 | 说明 |
-|----------|------|------|------|
-| 🔴 C (Critical) | 9.0-10.0 | {count} | 可直接导致系统沦陷 |
-| 🟠 H (High) | 7.0-8.9 | {count} | 可造成重大损害 |
-| 🟡 M (Medium) | 4.0-6.9 | {count} | 可造成一定损害 |
-| 🔵 L (Low) | 0.1-3.9 | {count} | 安全加固建议 |
-
----
-
-## 3. 文件操作映射表
-
-| 序号 | 类名 | 方法 | 读取方法 | 路径来源 | 校验状态 | 可利用性 |
-|------|------|------|----------|----------|----------|----------|
-| 1 | FileController | download | FileInputStream | HTTP参数 | ❌ 无校验 | ✅ 已确认 |
-| 2 | FileService | readFile | Files.readAllBytes | 拼接路径 | ✅ 白名单 | ❌ 不可利用 |
-
----
-
-## 4. 高危漏洞详情
-
-### [{C/H/M/L}-FILE-{序号}] 任意文件读取漏洞
-
-| 项目 | 信息 |
-|------|------|
-| 严重等级 | {🔴/🟠/🟡/🔵} {Critical/High/Medium/Low} (CVSS {score}) |
-| 可达性 (R) | {0-3} - {判定理由} |
-| 影响范围 (I) | {0-3} - {判定理由} |
-| 利用复杂度 (C) | {0-3} - {判定理由} |
-| 可利用性 | ✅ 已确认可利用 |
-| 位置 | FileController.download() (FileController.java:45) |
-| 读取方法 | FileInputStream |
-
-#### 路径校验分析
-
-| 项目 | 值 |
-|------|-----|
-| 路径来源 | HTTP 参数 filePath |
-| 基础路径 | 无（完全可控） |
-| 校验逻辑 | 无 |
-| **结论** | ✅ 已确认可利用 |
-
-#### 漏洞代码
-
-\```java
-@GetMapping("/download")
-public void download(@RequestParam String filePath, HttpServletResponse response) {
-    FileInputStream fis = new FileInputStream(filePath);  // 直接使用用户输入
-    // ... 输出文件内容
-}
-\```
-
-#### 数据流追踪
-
-\```
-用户输入: filePath (HTTP GET 参数)
-     ↓
-Controller.download(filePath)
-     ↓
-new FileInputStream(filePath)  ← 未校验路径
-\```
-
-#### 验证 PoC
-
-\```http
-GET /api/file/download?filePath=../../../etc/passwd HTTP/1.1
-Host: {{host}}
-\```
-
-#### 建议修复
-
-\```java
-// 使用路径规范化和白名单目录校验
-String basePath = "/var/uploads";
-File file = new File(basePath, fileName);
-String canonicalPath = file.getCanonicalPath();
-if (!canonicalPath.startsWith(basePath)) {
-    throw new SecurityException("Invalid file path");
-}
-\```
-
----
-
-## 5. 验证 Payload 参考
-
-| 攻击类型 | 测试 Payload | 预期结果 |
-|----------|--------------|----------|
-| 路径遍历（Linux） | `../../../etc/passwd` | 读取系统文件 |
-| 路径遍历（Windows） | `..\\..\\..\\windows\\system32\\drivers\\etc\\hosts` | 读取系统文件 |
-| URL 编码绕过 | `..%2f..%2f..%2fetc%2fpasswd` | 读取系统文件 |
-| 双重编码绕过 | `..%252f..%252f..%252fetc%252fpasswd` | 读取系统文件 |
-
----
-
-## 6. 审计结论
-
-| 统计项 | 数量 |
-|--------|------|
-| 总文件操作数 | {count} |
-| 🔴 Critical | {count} |
-| 🟠 High | {count} |
-| 🟡 Medium | {count} |
-| 🔵 Low | {count} |
-| 安全（无漏洞） | {count} |
-
----
-
-## 7. 反编译文件清单
-
-**本次审计中反编译的文件：**
-
-| 序号 | 原始文件 | 反编译输出路径 |
-|------|----------|----------------|
-| 1 | FileController.class | /path/to/decompiled/com/example/FileController.java |
-| 2 | FileService.class | /path/to/decompiled/com/example/FileService.java |
-```
+- 文件名格式: `{project_name}_file_read_audit_{YYYYMMDD_HHMMSS}.md`
+- 不得修改模板结构、不得增删章节、不得调整顺序
+- 所有【填写】占位符必须替换为实际内容
+- 通用规范参考: [shared/OUTPUT_STANDARD.md](../shared/OUTPUT_STANDARD.md)
 
 ---
 
@@ -563,13 +432,14 @@ if (!canonicalPath.startsWith(basePath)) {
 - [ ] 所有参数来源已追踪
 
 ### 报告完整性检查
-- [ ] **综合审计报告已生成**
+- [ ] **综合审计报告已生成，且通过 OUTPUT_TEMPLATE.md 末尾的自检清单**
 - [ ] **反编译输出文件路径已标注**
 
 ---
 
 ## 参考资料
 
+- [OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) - 输出报告填充式模板
 - [FILE_READ_METHODS.md](references/FILE_READ_METHODS.md) - Java 文件读取方法详解
 - [PATH_TRAVERSAL.md](references/PATH_TRAVERSAL.md) - 路径遍历攻击详解
 - [DECOMPILE_STRATEGY.md](references/DECOMPILE_STRATEGY.md) - 反编译策略指南

@@ -304,82 +304,12 @@ mcp__java-decompile-mcp__decompile_files(
 
 ## 输出格式
 
-### 综合报告模板
+**严格按照 [references/OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) 中的填充式模板生成输出文件。**
 
-```markdown
-# {项目名称} - 文件上传漏洞审计报告
-
-生成时间: {timestamp}
-分析路径: {project_path}
-
----
-
-## 1. 审计概述
-
-| 项目 | 信息 |
-|------|------|
-| 审计范围 | {project_path} |
-| 上传实现 | {ServletFileUpload / MultipartFile / 其他} |
-| 分析方法 | 静态代码审计 + 数据流分析 |
-
----
-
-## 2. 漏洞统计
-
-| 严重等级 | CVSS | 数量 | 说明 |
-|----------|------|------|------|
-| 🔴 C (Critical) | 9.0-10.0 | {count} | 可直接导致系统沦陷 |
-| 🟠 H (High) | 7.0-8.9 | {count} | 可造成重大损害 |
-| 🟡 M (Medium) | 4.0-6.9 | {count} | 可造成一定损害 |
-| 🔵 L (Low) | 0.1-3.9 | {count} | 安全加固项 |
-
----
-
-## 3. 上传点映射表
-
-| 序号 | 类名 | 方法 | 上传实现 | 文件名来源 | 保存路径 | 校验状态 | 可利用性 |
-|------|------|------|----------|------------|----------|----------|----------|
-| 1 | UploadController | upload | MultipartFile | getOriginalFilename | /uploads/ | ❌ 无校验 | ✅ 已确认 |
-
----
-
-## 4. 高危漏洞详情
-
-### [{C/H/M/L}-UPLOAD-{序号}] 任意文件上传 / 路径穿越
-
-| 项目 | 信息 |
-|------|------|
-| 严重等级 | {🔴/🟠/🟡/🔵} {Critical/High/Medium/Low} (CVSS {score}) |
-| 可达性 (R) | {0-3} - {判定理由} |
-| 影响范围 (I) | {0-3} - {判定理由} |
-| 利用复杂度 (C) | {0-3} - {判定理由} |
-| 可利用性 | ✅ 已确认 / ⚠️ 待验证 / ❌ 不可利用 |
-| 位置 | {Class.method} ({file}:{line}) |
-| 上传实现 | {MultipartFile / FileItem} |
-
-#### 校验分析
-
-| 项目 | 值 |
-|------|-----|
-| 文件名来源 | {getOriginalFilename / item.getName} |
-| 目录限制 | {固定/可控} |
-| 类型校验 | {白名单/无} |
-| Web 可访问 | {是/否} |
-| **结论** | {已确认可利用/不可利用/需验证} |
-
-#### 漏洞说明
-
-简要描述缺失的校验逻辑与可能的攻击路径。
-
----
-
-## 5. 反编译文件清单
-
-| 序号 | 原始文件 | 反编译输出路径 |
-|------|----------|----------------|
-| 1 | UploadController.class | /path/to/decompiled/com/example/UploadController.java |
-| 2 | FileStorageService.class | /path/to/decompiled/com/example/FileStorageService.java |
-```
+- 文件名格式: `{project_name}_file_upload_audit_{YYYYMMDD_HHMMSS}.md`
+- 不得修改模板结构、不得增删章节、不得调整顺序
+- 所有【填写】占位符必须替换为实际内容
+- 通用规范参考: [shared/OUTPUT_STANDARD.md](../shared/OUTPUT_STANDARD.md)
 
 ---
 
@@ -395,10 +325,11 @@ mcp__java-decompile-mcp__decompile_files(
 - [ ] 反编译文件清单已输出（文件名 + 位置）
 
 ### 报告完整性检查
-- [ ] **综合审计报告已生成**
+- [ ] **综合审计报告已生成，且通过 OUTPUT_TEMPLATE.md 末尾的自检清单**
 
 ---
 
 ## 参考资料
 
+- [OUTPUT_TEMPLATE.md](references/OUTPUT_TEMPLATE.md) - 输出报告填充式模板
 - [UPLOAD_RULES.md](references/UPLOAD_RULES.md) - 上传实现识别与风险规则
