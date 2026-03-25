@@ -651,9 +651,9 @@ ls -la {project_name}_audit/auth_audit/
 - [ ] 高危风险都有验证 PoC（区分登录/未登录场景）
 
 ### 文件完整性检查（CRITICAL - 三文件验证）
-- [ ] **主报告文件已生成**: `{project_name}_auth/{project_name}_auth_audit_{timestamp}.md`
-- [ ] **映射表文件已生成**: `{project_name}_auth/{project_name}_auth_mapping_{timestamp}.md`
-- [ ] **说明文档已生成**: `{project_name}_auth/{project_name}_auth_README_{timestamp}.md`
+- [ ] **主报告文件已生成**: `{project_name}_audit/auth_audit/{project_name}_auth_audit_{timestamp}.md`
+- [ ] **映射表文件已生成**: `{project_name}_audit/auth_audit/{project_name}_auth_mapping_{timestamp}.md`
+- [ ] **说明文档已生成**: `{project_name}_audit/auth_audit/{project_name}_auth_README_{timestamp}.md`
 - [ ] 三个文件内容不重复（职责划分正确）
 - [ ] 文件间相互引用链接正确
 

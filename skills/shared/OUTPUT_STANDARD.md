@@ -197,6 +197,6 @@
 | java-xxe-audit | `references/OUTPUT_TEMPLATE.md` | 1 个 |
 | java-file-upload-audit | `references/OUTPUT_TEMPLATE.md` | 1 个 |
 | java-file-read-audit | `references/OUTPUT_TEMPLATE.md` | 1 个 |
-| java-route-mapper | `references/OUTPUT_TEMPLATE_INDEX.md` + `OUTPUT_TEMPLATE_MODULE.md` | N 个（按模块） |
-| java-route-tracer | `references/OUTPUT_TEMPLATE.md` | 1 个 |
+| java-route-mapper | `references/OUTPUT_TEMPLATE_INDEX.md` + `OUTPUT_TEMPLATE_MODULE.md` + `OUTPUT_TEMPLATE_README.md` | N 个（按模块） |
+| java-route-tracer | `references/OUTPUT_TEMPLATE_FULL.md` + `OUTPUT_TEMPLATE_SIMPLE.md` + `OUTPUT_TEMPLATE_INDEX.md` | N 个（按方法） |
 | java-vuln-scanner | `references/OUTPUT_TEMPLATE.md` | 1 个 |
