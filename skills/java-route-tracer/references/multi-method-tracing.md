@@ -132,7 +132,7 @@ def filter_webservice_methods(methods, interface_class):
 
 ```python
 def audit_route(entry_class, route_path):
-    print(f"正在分析入口类: {entry_class.getName()}")
+    print(f"正在扫描入口类: {entry_class.getName()}")
 
     entry_methods = find_all_entry_methods(entry_class)
 
@@ -206,14 +206,14 @@ myproject_audit/route_tracer/myproject_trace_getDetailQuery_20260204.md
 
 ---
 
-## 参数结构分析优化
+## 参数结构检查优化
 
-对于参数结构相同的方法，可以采用通用模式分析：
+对于参数结构相同的方法，可以采用通用模式检查：
 
 ```markdown
 ---
 
-## 方法参数结构分析（通用）
+## 方法参数结构检查（通用）
 
 **所有37个方法都采用相同的参数结构**:
 
@@ -235,7 +235,7 @@ HTTP SOAP Body → searchJson → 反序列化为 QueryBean
 
 ---
 
-## 参数验证逻辑分析（通用）
+## 参数验证逻辑检查（通用）
 
 所有方法都调用 `WebServiceUtil.valiatePam()` 进行参数验证：
 
@@ -294,7 +294,7 @@ def format_level_content(level, method_call, full=True):
 
     if full:
         content += f"**完整代码**:\n```java\n{method_call['code']}\n```\n"
-        content += f"**分支分析**:\n{format_branch_analysis(method_call['branches'])}\n"
+        content += f"**分支判定**:\n{format_branch_analysis(method_call['branches'])}\n"
     else:
         content += f"**调用关系**: {method_call['description']}\n"
 

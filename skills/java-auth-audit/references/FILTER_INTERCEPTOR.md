@@ -408,11 +408,11 @@ if (!(handler instanceof HandlerMethod)) {
 ## 输出示例
 
 ```markdown
-=== [FI-001] 路径匹配绕过风险 ===
-风险等级: 高
+=== [FI-001] 路径匹配绕过漏洞 ===
+漏洞等级: 高
 位置: AuthFilter.java:45
 
-问题描述:
+漏洞描述:
 - 使用 startsWith("/public") 进行白名单匹配
 - 可通过 /publicXXX 绕过鉴权
 - 可通过 /public/../admin 访问受保护资源
@@ -428,17 +428,17 @@ GET /public/../admin/users HTTP/1.1
 Host: {{host}}
 \```
 
-建议修复:
+修复步骤:
 - 使用正则表达式精确匹配: ^/public(/.*)?$
 - 在匹配前规范化路径
 
 ---
 
-=== [FI-002] URL 编码绕过风险 ===
-风险等级: 高
+=== [FI-002] URL 编码绕过漏洞 ===
+漏洞等级: 高
 位置: AuthFilter.java:30
 
-问题描述:
+漏洞描述:
 - 直接使用 request.getRequestURI() 获取路径
 - 未进行 URL 解码
 - 可通过 URL 编码绕过路径检查
@@ -449,7 +449,7 @@ GET /%61dmin/users HTTP/1.1
 Host: {{host}}
 \```
 
-建议修复:
+修复步骤:
 - 使用 URLDecoder.decode() 解码路径
 - 或使用 request.getServletPath()
 ```

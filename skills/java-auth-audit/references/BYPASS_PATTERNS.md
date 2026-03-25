@@ -147,21 +147,21 @@ uri = uri.toLowerCase();                    // 大小写归一化
    └── 版本号?（用于检查已知 CVE）
 ```
 
-**步骤二：分析鉴权代码**
+**步骤二：检查鉴权代码**
 
 ```
 1. 鉴权在哪一层实现？
    └── Filter? Interceptor? 注解? 框架配置?
-   
+
 2. 路径获取方式？
    └── getRequestURI()? getServletPath()?
-   
+
 3. 路径匹配逻辑？
    └── startsWith? endsWith? equals? 正则? AntMatcher?
-   
+
 4. 是否有归一化处理？
    └── 分号截断? 双斜杠处理? 路径穿越处理? URL解码?
-   
+
 5. 白名单配置？
    └── 静态资源后缀? 公开路径前缀?
 ```
@@ -918,8 +918,8 @@ if __name__ == "__main__":
 ## 输出示例
 
 ```markdown
-=== [BYPASS-001] 分号绕过 ===
-风险等级: 高
+=== [BYPASS-001] 分号绕过漏洞 ===
+漏洞等级: 高
 目标路径: /admin
 绕过路径: /admin;.js
 
@@ -928,7 +928,7 @@ if __name__ == "__main__":
 - [x] 存在 .js 后缀白名单
 - [x] 未做分号截断处理
 
-问题描述:
+漏洞描述:
 - 鉴权 Filter 使用 getRequestURI() 获取路径
 - 存在静态资源后缀白名单 (.js, .css, .png)
 - Spring MVC 路由使用 getServletPath()，会截断分号
@@ -941,15 +941,15 @@ Host: {{host}}
 
 响应: 200 OK (预期: 401/403)
 
-建议修复:
+修复步骤:
 1. 使用 getServletPath() 或 UrlPathHelper 获取路径
 2. 在匹配前对路径进行分号截断: uri.replaceAll(";.*", "")
 3. 移除不必要的静态资源白名单
 
 ---
 
-=== [BYPASS-002] 路径穿越绕过 ===
-风险等级: 高
+=== [BYPASS-002] 路径穿越绕过漏洞 ===
+漏洞等级: 高
 目标路径: /admin/users
 绕过路径: /public/../admin/users
 
@@ -958,7 +958,7 @@ Host: {{host}}
 - [x] 未对路径进行 normalize() 处理
 - [x] 存在可访问的公开路径 /public
 
-问题描述:
+漏洞描述:
 - Filter 使用 startsWith("/admin") 匹配保护路径
 - 未对路径进行规范化处理
 - /public 路径可公开访问
@@ -971,7 +971,7 @@ Host: {{host}}
 
 响应: 200 OK (预期: 401/403)
 
-建议修复:
+修复步骤:
 1. 在路径匹配前进行规范化: URI.create(uri).normalize().getPath()
 2. 使用 AntPathMatcher 或框架提供的路径匹配器
 3. 对路径进行严格校验，拒绝包含 .. 的请求

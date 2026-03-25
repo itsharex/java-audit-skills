@@ -115,7 +115,7 @@ protected void doPut(HttpServletRequest req, HttpServletResponse resp) { }
 protected void doDelete(HttpServletRequest req, HttpServletResponse resp) { }
 ```
 
-**分析方法：**
+**识别方法：**
 - 检查覆盖的 `doXxx` 方法
 - 确定支持的 HTTP 方法
 
@@ -127,7 +127,7 @@ String[] ids = req.getParameterValues("id");
 Map<String, String[]> params = req.getParameterMap();
 ```
 
-**分析要点：**
+**提取要点：**
 - 检查 `getParameter` 调用，提取参数名
 - 检查 `getParameterMap` 遍历，提取所有参数使用
 
@@ -143,7 +143,7 @@ String[] parts = pathInfo.split("/");
 String id = parts[1];
 ```
 
-**分析要点：**
+**提取要点：**
 - `getPathInfo()` 获取相对于 Servlet 的路径
 - 需要手动解析路径结构
 
@@ -163,7 +163,7 @@ String jsonBody = sb.toString();
 req.getParameter("username");
 ```
 
-**分析要点：**
+**提取要点：**
 - 检查 `getReader()`、`getInputStream()` 调用
 - 检查 Content-Type 处理逻辑
 
@@ -227,7 +227,7 @@ public class UserServlet extends HttpServlet {
 }
 ```
 
-**分析要点：**
+**提取要点：**
 - 通过 `getPathInfo()` 区分列表和详情
 - HTTP 方法通过不同的 `doXxx` 处理
 
@@ -254,7 +254,7 @@ public class FrontController extends HttpServlet {
 }
 ```
 
-**分析要点：**
+**提取要点：**
 - 需要分析 Action 注册逻辑
 - 路径可能通过配置或约定定义
 
@@ -298,6 +298,6 @@ public class FrontController extends HttpServlet {
 public class AuthFilter implements Filter { }
 ```
 
-**分析要点：**
+**提取要点：**
 - 记录过滤器路径
-- 可能影响请求可达性
+- 影响请求可达性，需记录拦截规则

@@ -48,7 +48,7 @@ com.opensymphony.xwork2.*
 </filter-mapping>
 ```
 
-**分析要点：**
+**提取要点：**
 - 过滤器 URL 模式决定 Struts 处理的路径范围
 
 ### struts.xml 配置
@@ -119,9 +119,9 @@ com.opensymphony.xwork2.*
 </action>
 ```
 
-**分析要点：**
+**提取要点：**
 - 记录通配符模式
-- 尝试推断可能的路径组合
+- 列举通配符模板的展开结果（如 user_list、user_detail）
 
 ---
 
@@ -290,9 +290,9 @@ user.profile.email=test@example.com
 <default-interceptor-ref name="authStack" />
 ```
 
-**分析要点：**
+**提取要点：**
 - 记录拦截器路径规则
-- 可能影响请求可达性
+- 影响请求可达性，需记录拦截规则
 
 ---
 
@@ -322,6 +322,6 @@ public class UserAction extends ActionSupport {
 <constant name="struts.action.extension" value="action,," />
 ```
 
-**分析要点：**
+**提取要点：**
 - 空字符串表示允许无扩展名
 - 影响路由路径格式

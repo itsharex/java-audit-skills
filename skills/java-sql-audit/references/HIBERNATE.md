@@ -5,8 +5,8 @@
 - [Hibernate 基础概念](#hibernate-基础概念)
 - [HQL 注入检测](#hql-注入检测)
 - [Native SQL 注入检测](#native-sql-注入检测)
-- [Criteria API 审计](#criteria-api-审计)
-- [JPA 注解审计](#jpa-注解审计)
+- [Criteria API 检查](#criteria-api-检查)
+- [JPA 注解检查](#jpa-注解检查)
 - [常见漏洞场景](#常见漏洞场景)
 
 ---
@@ -53,12 +53,12 @@ Query query = em.createQuery(jpql);
 
 ### 查询方式
 
-| 方式 | 说明 | 注入风险 |
-|------|------|----------|
-| HQL/JPQL | Hibernate/JPA 查询语言 | 取决于参数化 |
-| Native SQL | 原生 SQL | 取决于参数化 |
-| Criteria API | 类型安全的查询构建器 | 低（推荐） |
-| QueryDSL | 类型安全的查询 DSL | 低（推荐） |
+| 方式 | 说明 | 是否可注入 |
+|------|------|-----------|
+| HQL/JPQL | Hibernate/JPA 查询语言 | 取决于是否参数化 |
+| Native SQL | 原生 SQL | 取决于是否参数化 |
+| Criteria API | 类型安全的查询构建器 | 否（推荐） |
+| QueryDSL | 类型安全的查询 DSL | 否（推荐） |
 
 ---
 
@@ -149,7 +149,7 @@ query.setParameter(1, id);
 
 ---
 
-## Criteria API 审计
+## Criteria API 检查
 
 ### 老版 Criteria API（Hibernate 5.x 之前）
 
@@ -198,7 +198,7 @@ List<User> users = query.getResultList();
 
 ---
 
-## JPA 注解审计
+## JPA 注解检查
 
 ### @Query 注解
 
@@ -234,7 +234,7 @@ User findByIdNative(@Param("id") Long id);
 public class User { ... }
 ```
 
-### 审计 @Query 注解
+### 检查 @Query 注解
 
 ```bash
 # 搜索所有 @Query 注解
@@ -294,7 +294,7 @@ String orderBy = request.getParameter("sort");
 String hql = "FROM User ORDER BY " + orderBy;
 Query query = session.createQuery(hql);
 
-// ⚠️ ORDER BY 无法参数化，需要白名单
+// ⚠️ ORDER BY 无法参数化，必须白名单
 String orderBy = request.getParameter("sort");
 if (!ALLOWED_COLUMNS.contains(orderBy)) {
     orderBy = "id";
@@ -344,7 +344,7 @@ query.setParameter("username", username);
 
 ---
 
-## 审计检查清单
+## 检查清单
 
 ### HQL/JPQL 检查
 
@@ -374,13 +374,13 @@ query.setParameter("username", username);
 
 ---
 
-## 修复建议
+## 修复要求
 
-### 通用原则
+### 必须遵守的规范
 
 1. **始终使用参数绑定**（`:paramName` 或 `?1`）
 2. **优先使用 Criteria API**（类型安全）
-3. **避免 Native SQL**，必须使用时参数化
+3. **禁止使用 Native SQL 字符串拼接**，必须使用时改为参数化
 4. **ORDER BY 使用白名单**校验
 5. **禁止使用 Restrictions.sqlRestriction()**
 

@@ -104,8 +104,8 @@ grep -ri "fetch first\|rows only" --include="*.java"
 
 ### 2.3 分页拼接风险点
 
-| 参数 | 风险 | 说明 |
-|:-----|:-----|:-----|
+| 参数 | 可注入性 | 说明 |
+|:-----|:---------|:-----|
 | limit/count | 低 | 通常是 int 类型 |
 | offset/start | 低 | 通常是 int 类型 |
 | orderBy/sortColumn | **高** | String 类型，可注入 |
@@ -226,10 +226,10 @@ if (!allowedOrders.contains(order.toLowerCase())) {
    ├─ 检查是否有正则校验
    └─ 检查是否有枚举限制
 
-4. 执行条件分析
+4. 执行条件判断
    ├─ 检查数据库类型分支（isOracle/isMySQL）
-   ├─ 分析代码路径可达性
-   └─ 标注可利用性状态
+   ├─ 检查代码路径是否存在可控参数
+   └─ 标注注入可达性（是/否）
 ```
 
 ---

@@ -5,7 +5,7 @@
 - [何时反编译](#何时反编译)
 - [反编译工具使用](#反编译工具使用)
 - [XML 解析类识别与定位](#xml-解析类识别与定位)
-- [反编译结果分析](#反编译结果分析)
+- [反编译结果检查](#反编译结果检查)
 - [常见问题](#常见问题)
 
 ---
@@ -23,7 +23,7 @@
    - Servlet/Controller 中的 XML 处理
    - WebService/SOAP 处理器
 
-3. **需要分析 XML 解析配置**
+3. **需要检查 XML 解析配置**
    - 确认是否设置了安全特性
    - 追踪解析器工厂的配置链
    - 检查自定义 EntityResolver
@@ -165,9 +165,9 @@ find . -name "*.class" -exec strings {} \; | grep -l "org.xml.sax.InputSource"
 
 ---
 
-## 反编译结果分析
+## 反编译结果检查
 
-### 分析要点
+### 检查要点
 
 反编译后重点关注：
 
@@ -186,7 +186,7 @@ String value = root.getTextContent();
 response.getWriter().write(value);  // 回显到 HTTP 响应
 ```
 
-### 示例分析
+### 示例检查
 
 ```java
 // 反编译后的 XmlParser 示例
@@ -212,7 +212,7 @@ public class XmlParser {
 
 **提取信息：**
 
-| 方法 | 解析器 | 安全配置 | 风险评估 |
+| 方法 | 解析器 | 安全配置 | 漏洞判定 |
 |------|--------|----------|----------|
 | parseXml | DocumentBuilderFactory | ❌ 仅 setValidating(false) | **高危** |
 | parseXmlSafe | DocumentBuilderFactory | ✅ disallow-doctype-decl | 安全 |
@@ -233,7 +233,7 @@ xml_classes = find_xml_classes()
 for cls in xml_classes:
     decompile_file(cls)
 
-# 步骤 3: 分析依赖，反编译调用者
+# 步骤 3: 检查依赖，反编译调用者
 callers = extract_xml_callers(xml_classes)
 for caller in callers:
     decompile_file(caller)
@@ -266,12 +266,12 @@ decompile_by_pattern(layer3)
 
 | 项目 | 信息 |
 |------|------|
-| 风险等级 | 高 |
+| 漏洞等级 | 高 |
 | 位置 | XmlParser.parseXml (XmlParser.java:15) |
 | 来源 | **反编译 WEB-INF/classes/com/example/util/XmlParser.class** |
 | 解析器 | DocumentBuilderFactory |
 
-问题描述:
+漏洞描述:
 - DocumentBuilderFactory 未设置 disallow-doctype-decl
 - 仅设置 setValidating(false)，不能防止 XXE
 - 输入来源为 InputStream 参数，可能用户可控
@@ -302,7 +302,7 @@ mcp__java-decompile-mcp__download_cfr_tool()
 
 **表现：** 反编译后 Feature URI 字符串可能被拆分或混淆
 
-**处理：** 搜索 `setFeature` 方法调用，逐一分析参数值
+**处理：** 搜索 `setFeature` 方法调用，逐一检查参数值
 
 ### 问题 3: 工厂模式封装
 

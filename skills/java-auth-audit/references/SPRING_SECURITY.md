@@ -96,7 +96,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-### 路径匹配器分析
+### 路径匹配器对比
 
 | 匹配器 | 说明 | 示例 |
 |--------|------|------|
@@ -302,11 +302,11 @@ http.rememberMe()
 ## 输出示例
 
 ```markdown
-=== [SS-001] 路径匹配不一致 ===
-风险等级: 高
+=== [SS-001] 路径匹配不一致导致鉴权绕过 ===
+漏洞等级: 高
 位置: SecurityConfig.java:32
 
-问题描述:
+漏洞描述:
 - 使用 antMatchers("/admin") 保护管理路径
 - antMatchers 不匹配尾部斜杠
 - /admin/ 可绕过权限控制
@@ -317,24 +317,24 @@ GET /admin/ HTTP/1.1
 Host: {{host}}
 \```
 
-建议修复:
+修复步骤:
 - 使用 mvcMatchers("/admin") 替代
 - 或同时匹配: antMatchers("/admin", "/admin/**")
 
 ---
 
 === [SS-002] CSRF 保护被禁用 ===
-风险等级: 中
+漏洞等级: 中
 位置: SecurityConfig.java:25
 
-问题描述:
+漏洞描述:
 - CSRF 保护被完全禁用
-- 存在跨站请求伪造风险
+- 存在跨站请求伪造漏洞
 
 当前配置:
 http.csrf().disable();
 
-建议修复:
+修复步骤:
 - 仅对无状态 API 禁用 CSRF
-- 对表单提交保持 CSRF 保护
+- 对表单提交必须保持 CSRF 保护
 ```
