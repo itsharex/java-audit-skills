@@ -60,7 +60,8 @@
 ├── file_upload_audit/     # java-file-upload-audit 输出
 ├── file_read_audit/       # java-file-read-audit 输出
 ├── route_tracer/          # java-route-tracer 输出
-└── vuln_report/           # java-vuln-scanner 输出
+├── vuln_report/           # java-vuln-scanner 输出
+└── scripts/               # 临时脚本目录（运行时生成的脚本必须写入此目录，禁止写入临时目录）
 ```
 
 ---
