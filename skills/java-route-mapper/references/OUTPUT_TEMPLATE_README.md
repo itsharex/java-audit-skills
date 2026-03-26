@@ -95,8 +95,9 @@ A: 使用反编译工具获取完整的类定义
 
 ## 6. 相关文档
 
-- 主索引: 【填写：主索引文件名及链接】
-- 【填写：各模块详情文件名及链接，每个一行】
+- 主索引: 【填写：如 [myapp_route_mapper_xxx.md](myapp_route_mapper_xxx.md)】
+- 【填写：各模块/WS 详情文件链接，每个一行，如 [admin 模块](admin/myapp_module_admin_xxx.md)】
+- 【填写：如 [OrderService](webservice/myapp_ws_orderService_xxx.md)】
 
 ---
 

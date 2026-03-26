@@ -14,7 +14,7 @@
 1. 读取 agent-2-auth-audit 鉴权映射表，提取 ❌无鉴权 的路由
 2. 读取 agent-2-auth-audit 鉴权绕过漏洞，提取 🔓可绕过鉴权 的路由
 3. 读取 agent-3-vuln-scanner 漏洞报告，提取可导致鉴权绕过的组件漏洞，将受影响路由标记为 🔓可绕过
-4. 读取 agent-1-route-mapper 路由列表，获取完整参数结构
+4. 读取 agent-1-route-mapper 路由主索引（`{output_path}/route_mapper/` 根目录下的 `*_route_mapper_*.md`），通过主索引中的模块链接定位各模块子目录下的详情文件，获取完整参数结构
 5. 生成高危路由清单，按优先级排序：
 
 | 优先级 | 条件 |

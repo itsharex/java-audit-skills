@@ -379,7 +379,7 @@ task-19: agent-7-x 最终汇总 quality_report.md  (blockedBy: [18], 仅等待�
 
 ```
 {output_path}/
-├── route_mapper/              # 阶段1 - agent-1-route-mapper
+├── route_mapper/              # 阶段1 - agent-1-route-mapper（含按模块划分的子目录）
 ├── auth_audit/                # 阶段1 - agent-2-auth-audit
 ├── vuln_report/               # 阶段1 - agent-3-vuln-scanner
 ├── cross_analysis/            # 阶段2 - agent-4a & agent-4b

@@ -457,7 +457,7 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
 
 ```
 {project_name}_audit/
-├── route_mapper/              # java-route-mapper 输出
+├── route_mapper/              # java-route-mapper 输出（含按模块划分的子目录，主索引在根目录）
 ├── route_tracer/              # java-route-tracer 输出
 ├── sql_audit/                 # java-sql-audit 输出
 ├── auth_audit/                # java-auth-audit 输出

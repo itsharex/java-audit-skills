@@ -379,14 +379,14 @@ SOAPAction: ""
 
   | 模块 | 文件 | 接口数量 |
   |:-----|:-------|:-----|
-  | admin | [myapp_module_admin.md](myapp_module_admin.md) | 218 |
-  | user | [myapp_module_user.md](myapp_module_user.md) | 85 |
-  | api | [myapp_module_api.md](myapp_module_api.md) | 45 |
+  | admin | [admin/myapp_module_admin.md](admin/myapp_module_admin.md) | 218 |
+  | user | [user/myapp_module_user.md](user/myapp_module_user.md) | 85 |
+  | api | [api/myapp_module_api.md](api/myapp_module_api.md) | 45 |
 
   验证步骤：
-  1. 检查 myapp_module_admin.md 是否存在
-  2. 检查 myapp_module_user.md 是否存在
-  3. 检查 myapp_module_api.md 是否存在
+  1. 检查 admin/myapp_module_admin.md 是否存在
+  2. 检查 user/myapp_module_user.md 是否存在
+  3. 检查 api/myapp_module_api.md 是否存在
   4. 确认模块数量(3) = 实际文件数量(3)
 
 □ Web Service 索引中的每个服务都已生成对应的详情文件
@@ -398,13 +398,13 @@ SOAPAction: ""
 
 ```markdown
 □ 文件数量一致性
-  演示案例：主索引列出5个模块 → 必须有5个对应的 module_xxx.md 文件
+  演示案例：主索引列出5个模块 → 必须有5个对应的模块子目录，且每个子目录中都有对应的 module_xxx.md 文件
 
 □ 文件名一致性
-  演示案例：主索引引用 myapp_module_admin.md → 实际文件名必须完全匹配
+  演示案例：主索引引用 admin/myapp_module_admin.md → 实际相对路径和文件名必须完全匹配
 
 □ 链接有效性
-  演示案例：点击主索引中的 [myapp_module_admin.md] 链接应能成功打开
+  演示案例：点击主索引中的 [admin/myapp_module_admin.md] 链接应能成功打开
 ```
 
 #### 6.3 内容完整性检查
@@ -421,7 +421,7 @@ SOAPAction: ""
   ==========
   某模块 upload 只有静态资源，没有业务路由
 
-  正确做法：仍然生成 myapp_module_upload.md
+  正确做法：仍然生成 upload/myapp_module_upload.md
   ```markdown
   # MyApp - upload 模块详情
 
@@ -442,25 +442,25 @@ SOAPAction: ""
 **演示案例：在完成所有文件生成后，运行以下命令验证**
 
 ```bash
-# 假设项目名称为 myapp，生成的文件如下：
-# myapp_route_mapper_20260129.md    (主索引)
-# myapp_module_admin_20260129.md   (admin模块)
-# myapp_module_user_20260129.md    (user模块)
-# myapp_module_api_20260129.md     (api模块)
+# 假设项目名称为 myapp，输出目录为 route_mapper/，生成的文件如下：
+# route_mapper/myapp_route_mapper_20260129.md       (主索引)
+# route_mapper/admin/myapp_module_admin_20260129.md  (admin模块)
+# route_mapper/user/myapp_module_user_20260129.md    (user模块)
+# route_mapper/api/myapp_module_api_20260129.md      (api模块)
 
-# 验证命令1: 检查生成的文件列表
-ls -la myapp_module_*.md
+# 验证命令1: 检查生成的模块子目录和文件
+find route_mapper/ -name "*_module_*.md" -type f
 # 预期输出：应该看到3个模块详情文件
 
-# 验证命令2: 从主索引中提取所有引用的文件名
-grep -o "myapp_module_[^)]*md" myapp_route_mapper_20260129.md | sort -u
+# 验证命令2: 从主索引中提取所有引用的文件路径
+grep -oP '[a-z]+/myapp_module_[^)]*md' route_mapper/myapp_route_mapper_20260129.md | sort -u
 
 # 验证命令3: 检查引用的文件是否都存在
-grep -o "myapp_module_[^)]*md" myapp_route_mapper_20260129.md | while read f; do
-  if [ ! -f "$f" ]; then
-    echo "❌ 缺失文件: $f"
+grep -oP '[a-z]+/myapp_[^)]*md' route_mapper/myapp_route_mapper_20260129.md | while read f; do
+  if [ ! -f "route_mapper/$f" ]; then
+    echo "❌ 缺失文件: route_mapper/$f"
   else
-    echo "✅ 存在文件: $f"
+    echo "✅ 存在文件: route_mapper/$f"
   fi
 done
 ```
@@ -473,23 +473,23 @@ done
 假设分析了一个名为 myshop 的电商项目，包含以下模块：
 
 步骤1: 生成主索引文件
-  ✅ myshop_route_mapper_20260129.md
+  ✅ route_mapper/myshop_route_mapper_20260129.md
 
 步骤2: 检查主索引中的模块列表
   主索引显示：product, order, user, payment (4个模块)
 
-步骤3: 验证详情文件是否存在
-  ✅ myshop_module_product_20260129.md
-  ✅ myshop_module_order_20260129.md
-  ✅ myshop_module_user_20260129.md
-  ✅ myshop_module_payment_20260129.md
+步骤3: 验证模块子目录和详情文件是否存在
+  ✅ route_mapper/product/myshop_module_product_20260129.md
+  ✅ route_mapper/order/myshop_module_order_20260129.md
+  ✅ route_mapper/user/myshop_module_user_20260129.md
+  ✅ route_mapper/payment/myshop_module_payment_20260129.md
 
 步骤4: 生成README文档
-  ✅ myshop_README_20260129.md
+  ✅ route_mapper/myshop_README_20260129.md
 
 步骤5: 执行验证命令
-  $ grep -o "myshop_module_[^)]*md" myshop_route_mapper_20260129.md | while read f; do [ -f "$f" ] || echo "缺失: $f"; done
-  (无输出表示所有文件都存在)
+  $ find route_mapper/ -name "*_module_*.md" -type f | wc -l
+  4 (与主索引中模块数量一致)
 
 步骤6: 确认完成
   所有检查项通过 → 可以标记任务完成
@@ -658,32 +658,35 @@ Content-Type: application/json
 - 单个 Web Service 方法数量 > 10 个
 - 预估输出文件大小 > 100KB
 
-#### 7.2 文件名策略
+#### 7.2 文件名与目录策略
 
-**文件名策略是动态生成的，不限于固定的模块名。**
+**按模块建子目录，文件名动态生成。**
 
 | 文件类型 | 命名格式 | 示例 |
 |---------|---------|------|
-| 主索引 | `{项目名}_audit/route_mapper/{项目名}_route_mapper_{时间戳}.md` | `myapp_audit/route_mapper/myapp_route_mapper_20260121.md` |
-| 模块详情 | `{项目名}_audit/route_mapper/{项目名}_module_{模块名}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_module_admin_20260121.md` |
-| Web Service | `{项目名}_audit/route_mapper/{项目名}_ws_{服务名}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_ws_userservice_20260121.md` |
-| Namespace 拆分 | `{项目名}_audit/route_mapper/{项目名}_{namespace}_{时间戳}.md` | `myapp_audit/route_mapper/myapp_admin_user_20260121.md` |
-| README | `{项目名}_audit/route_mapper/{项目名}_README_{时间戳}.md` | `myapp_audit/route_mapper/myapp_README_20260121.md` |
+| 主索引 | `route_mapper/{项目名}_route_mapper_{时间戳}.md` | `route_mapper/myapp_route_mapper_20260121.md` |
+| 模块详情 | `route_mapper/{模块名}/{项目名}_module_{模块名}_{时间戳}.md` | `route_mapper/admin/myapp_module_admin_20260121.md` |
+| Web Service | `route_mapper/webservice/{项目名}_ws_{服务名}_{时间戳}.md` | `route_mapper/webservice/myapp_ws_userservice_20260121.md` |
+| Namespace 拆分 | `route_mapper/{模块名}/{项目名}_{namespace}_{时间戳}.md` | `route_mapper/admin/myapp_admin_user_20260121.md` |
+| README | `route_mapper/{项目名}_README_{时间戳}.md` | `route_mapper/myapp_README_20260121.md` |
+
+**目录创建规则：**
+- 主索引和 README 放在 `route_mapper/` 根目录
+- 每个模块的详情文件放在 `route_mapper/{模块名}/` 子目录下
+- 所有 Web Service 文件放在 `route_mapper/webservice/` 子目录下
+- 子目录由 route-mapper agent 按需创建（`mkdir -p`）
 
 **动态模块名示例：**
 
-| 实际模块/namespace | 生成的文件名 |
-|------------------|:-------------|
-| `admin` | `myapp_module_admin_20260121.md` |
-| `user` | `myapp_module_user_20260121.md` |
-| `config` | `myapp_module_config_20260121.md` |
-| `report` | `myapp_module_report_20260121.md` |
-| `upload` | `myapp_module_upload_20260121.md` |
-| `api` | `myapp_module_api_20260121.md` |
-| `common` | `myapp_module_common_20260121.md` |
-| `product` | `myapp_module_product_20260121.md` |
-| `order` | `myapp_module_order_20260121.md` |
-| `/` (root namespace) | `myapp_module_root_20260121.md` |
+| 实际模块/namespace | 子目录 | 生成的文件名 |
+|------------------|:------|:-------------|
+| `admin` | `admin/` | `admin/myapp_module_admin_20260121.md` |
+| `user` | `user/` | `user/myapp_module_user_20260121.md` |
+| `config` | `config/` | `config/myapp_module_config_20260121.md` |
+| `api` | `api/` | `api/myapp_module_api_20260121.md` |
+| `product` | `product/` | `product/myapp_module_product_20260121.md` |
+| `order` | `order/` | `order/myapp_module_order_20260121.md` |
+| `/` (root namespace) | `root/` | `root/myapp_module_root_20260121.md` |
 
 **模块识别来源：**
 
@@ -695,83 +698,57 @@ Content-Type: application/json
 
 #### 7.3 拆分策略
 
-**策略 A: 按模块拆分（推荐）**
+**策略 A: 按模块子目录拆分（推荐）**
 
-为每个模块生成独立的 MD 文件：
+每个模块一个子目录，主索引放根目录：
 
 ```
-{project_name}_audit/route_mapper/
-├── {project_name}_route_mapper_{timestamp}.md         # 主索引文件
-├── {project_name}_module_admin_{timestamp}.md        # admin 模块详情
-├── {project_name}_module_itc_{timestamp}.md          # itc 模块详情
-├── {project_name}_module_xxx_{timestamp}.md          # 其他模块（动态生成）
-└── {project_name}_README_{timestamp}.md              # 说明文档
+route_mapper/
+├── {project_name}_route_mapper_{timestamp}.md         # 主索引文件（根目录）
+├── {project_name}_README_{timestamp}.md               # 说明文档（根目录）
+├── admin/                                             # admin 模块子目录
+│   └── {project_name}_module_admin_{timestamp}.md     # 接口 ≤ 50 → 单文件
+├── user/                                              # user 模块子目录
+│   ├── {project_name}_module_user_{timestamp}.md      # 接口 > 50 → 模块概览 + namespace 拆分
+│   ├── {project_name}_user_manage_{timestamp}.md      # namespace 详情
+│   └── {project_name}_user_auth_{timestamp}.md        # namespace 详情
+└── webservice/                                        # Web Service 子目录
+    └── {project_name}_ws_orderService_{timestamp}.md
 ```
 
-**主索引文件内容：**
+**主索引文件中的链接指向子目录：**
 ```markdown
-# {项目名称} - 路由审计报告（索引）
-
-生成时间: {timestamp}
-分析路径: {project_path}
-
-## 项目概览
-[项目基本信息]
-
 ## 模块索引
 
 | 模块 | 文件 | 接口数量 | 框架 |
-|:-----|:-------|:-----|
-| admin | [module_admin_20260121.md](module_admin_20260121.md) | 218 | Struts2+Spring+CXF |
-| itc | [module_itc_20260121.md](module_itc_20260121.md) | 85 | Struts2+CXF |
-| ... | ... | ... | ... |
+|:-----|:-------|:-----|:-----|
+| admin | [admin/myapp_module_admin_20260121.md](admin/myapp_module_admin_20260121.md) | 35 | Struts2 |
+| user | [user/myapp_module_user_20260121.md](user/myapp_module_user_20260121.md) | 218 | Struts2+Spring |
 
-## 统计摘要
-[总体统计]
+## Web Service 索引
+
+| 服务 | 文件 | 方法数量 |
+|:-----|:----|:--------|
+| OrderService | [webservice/myapp_ws_orderService_20260121.md](webservice/myapp_ws_orderService_20260121.md) | 40 |
 ```
 
-**模块详情文件内容：**
-````markdown
-# {项目名称} - {模块名} 模块详情
+**拆分触发规则：**
 
-生成时间: {timestamp}
-模块路径: /{module-context-path}
+| 条件 | 行为 |
+|:-----|:-----|
+| 模块接口 ≤ 50 | 单文件放在模块子目录下 |
+| 模块接口 > 50 | 模块概览 + 按 namespace 拆分，都放在模块子目录下 |
 
-## 模块概览
+**策略 B: 按 namespace 拆分（适用于单模块接口极多的情况）**
 
-[模块基本信息、框架配置]
-
-## 接口详细列表
-
-### Struts2 路由
-
-=== [1] user_login.action ===
-位置: AuthAction.login (路径:行号)
-HTTP 方法: POST
-URL 路径: /admin/user_login.action
-
-Burp Suite 请求模板(必须在代码块中):
-```http
-[完整请求模板]
-```
-
-=== [2] sso_checkLogin.action ===
-[完整请求模板]
-
-[所有接口的完整模板...]
-````
-
-**策略 B: 按 namespace 拆分（适用于接口极多的情况）**
-
-为每个 namespace 生成独立的 MD 文件：
+当单模块接口 > 50 时，在该模块子目录内按 namespace 继续拆分：
 
 ```
-{project_name}_audit/route_mapper/{project_name}_route_mapper_{timestamp}.md              # 主索引
-{project_name}_audit/route_mapper/{project_name}_admin_device_{timestamp}.md              # /device namespace
-{project_name}_audit/route_mapper/{project_name}_admin_channel_{timestamp}.md            # /channel namespace
-{project_name}_audit/route_mapper/{project_name}_admin_login_{timestamp}.md              # / namespace (登录相关)
-{project_name}_audit/route_mapper/{project_name}_rest_{timestamp}.md                    # REST 接口
-{project_name}_audit/route_mapper/{project_name}_webservices_{timestamp}.md              # Web Service
+route_mapper/admin/
+├── {project_name}_module_admin_{timestamp}.md          # 模块概览（含子文件索引）
+├── {project_name}_admin_device_{timestamp}.md          # /device namespace
+├── {project_name}_admin_channel_{timestamp}.md         # /channel namespace
+└── {project_name}_admin_login_{timestamp}.md           # / namespace (登录相关)
 ```
 
 #### 7.4 拆分实现规则
@@ -784,12 +761,13 @@ Burp Suite 请求模板(必须在代码块中):
    - 包含项目概览、模块索引、统计摘要
    - 指向各个详情文件的链接
 
-3. **并行生成详情文件**
-   - 每个模块/namespace:独立写入文件
-   - 每个文件包含该部分所有接口的完整模板
+3. **创建模块子目录并生成详情文件**
+   - 为每个模块执行 `mkdir -p {output_path}/route_mapper/{模块名}/`
+   - Web Service 统一放入 `mkdir -p {output_path}/route_mapper/webservice/`
+   - 每个模块/namespace 独立写入对应子目录下的文件
 
 4. **保证可追溯性**
-   - 主索引包含各详情文件的完整路径
+   - 主索引包含各详情文件的**相对子目录路径**（如 `admin/myapp_module_admin_xxx.md`）
    - 详情文件顶部注明所属模块和生成时间
 
 #### 7.5 Web Service 方法拆分
@@ -807,10 +785,10 @@ Burp Suite 请求模板(必须在代码块中):
 主文件：
 ```markdown
 #### UserService (服务路径: /services/UserService)
-详细方法列表见: [myapp_webservice_user_20260121.md](myapp_webservice_user_20260121.md)
+详细方法列表见: [webservice/myapp_ws_user_20260121.md](webservice/myapp_ws_user_20260121.md)
 ```
 
-详情文件 `myapp_webservice_user_20260121.md`：
+详情文件 `webservice/myapp_ws_user_20260121.md`：
 ````markdown
 # UserService 方法详情
 
@@ -850,10 +828,10 @@ SOAPAction: ""
 
 | 文件类型 | 模板 | 命名格式 | 数量 |
 |---------|------|---------|------|
-| 主索引 | [OUTPUT_TEMPLATE_INDEX.md](references/OUTPUT_TEMPLATE_INDEX.md) | `{project_name}_route_mapper_{YYYYMMDD_HHMMSS}.md` | 1 个 |
-| 模块详情 | [OUTPUT_TEMPLATE_MODULE.md](references/OUTPUT_TEMPLATE_MODULE.md) | `{project_name}_module_{module_name}_{YYYYMMDD_HHMMSS}.md` | N 个（按模块） |
-| WS 详情 | [OUTPUT_TEMPLATE_MODULE.md](references/OUTPUT_TEMPLATE_MODULE.md) | `{project_name}_ws_{service_name}_{YYYYMMDD_HHMMSS}.md` | N 个（按服务） |
-| 说明文档 | [OUTPUT_TEMPLATE_README.md](references/OUTPUT_TEMPLATE_README.md) | `{project_name}_route_README_{YYYYMMDD_HHMMSS}.md` | 1 个 |
+| 主索引 | [OUTPUT_TEMPLATE_INDEX.md](references/OUTPUT_TEMPLATE_INDEX.md) | `route_mapper/{project_name}_route_mapper_{YYYYMMDD_HHMMSS}.md` | 1 个 |
+| 模块详情 | [OUTPUT_TEMPLATE_MODULE.md](references/OUTPUT_TEMPLATE_MODULE.md) | `route_mapper/{module_name}/{project_name}_module_{module_name}_{YYYYMMDD_HHMMSS}.md` | N 个（按模块） |
+| WS 详情 | [OUTPUT_TEMPLATE_MODULE.md](references/OUTPUT_TEMPLATE_MODULE.md) | `route_mapper/webservice/{project_name}_ws_{service_name}_{YYYYMMDD_HHMMSS}.md` | N 个（按服务） |
+| 说明文档 | [OUTPUT_TEMPLATE_README.md](references/OUTPUT_TEMPLATE_README.md) | `route_mapper/{project_name}_route_README_{YYYYMMDD_HHMMSS}.md` | 1 个 |
 
 **关键规则：**
 - 所有【填写】占位符必须替换为实际内容
@@ -892,11 +870,15 @@ SOAPAction: ""
 
 ### 文件命名规则
 
-对于大型项目，按 namespace 拆分文件：
+对于大型项目，按模块子目录 + namespace 拆分文件：
 ```
-{project}_route_mapper_{date}.md              # 主索引
-{project}_module_{module}_{date}.md          # 模块概览
-{project}_{module}_{namespace}_{date}.md     # namespace 详情
+route_mapper/
+├── {project}_route_mapper_{date}.md                    # 主索引
+├── {module}/
+│   ├── {project}_module_{module}_{date}.md             # 模块概览
+│   └── {project}_{module}_{namespace}_{date}.md        # namespace 详情
+└── webservice/
+    └── {project}_ws_{service}_{date}.md                # Web Service 详情
 ```
 
 ---
