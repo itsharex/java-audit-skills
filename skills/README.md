@@ -423,11 +423,11 @@ SecurityFilterChain: /api/admin/** = hasRole('ADMIN')
   └─ agent-3-vuln-scanner: /java-vuln-scanner   → 组件漏洞        → agent-7 校验 → 通过后关闭
         ↓ 三个校验全部通过后
 阶段2: 交叉分析（并行）
-  ├─ agent-4a-risk-classifier: 无鉴权路由分级（P0/P1） → agent-7 校验 → 通过后关闭
+  ├─ agent-4a-risk-classifier: 路由分级（P0/P1/P2） → agent-7 校验 → 通过后关闭
   └─ agent-4b-vuln-aggregator: 漏洞汇总（组件漏洞+鉴权绕过） → agent-7 校验 → 通过后关闭
         ↓ 两个校验全部通过后
 阶段3: 调用链追踪（分批并行）
-  ├─ agent-5-route-tracer: 读取 P0+P1 全部高危路由，分批创建追踪任务 → 通过后关闭
+  ├─ agent-5-route-tracer: 读取 P0+P1 全部高危路由（P0+P1=0 时启用 P2 兜底），分批创建追踪任务 → 通过后关闭
   └─ agent-5-1/5-2/.../5-N: /java-route-tracer 并行追踪各批次路由（含鉴权风险透传） → agent-7 校验 → 通过后关闭
         ↓
 阶段4: 漏洞深度分析（按需并行）
