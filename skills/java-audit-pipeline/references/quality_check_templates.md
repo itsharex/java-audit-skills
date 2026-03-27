@@ -211,7 +211,7 @@
 - {✅/❌→✅} agent-4b-vuln-aggregator: 组件漏洞汇总+鉴权绕过汇总 校验{通过/不通过}
 
 ### 阶段3
-- {✅/❌→✅} agent-5-route-tracer: 分批方案校验{通过/不通过}（{审计模式：P0+P1 全覆盖 / P2 兜底模式}，{N} 批次）
+- {✅/❌→✅} agent-5-route-tracer: 分批方案校验{通过/不通过}（{审计模式：全量审计 / 智能精选 600 条 / P2 兜底模式}，{N} 批次）
 - {✅/❌→✅} agent-5-1: java-route-tracer 校验{通过/不通过}（含鉴权状态透传）[agent-7-{X}]
 - {✅/❌→✅} agent-5-2: java-route-tracer 校验{通过/不通过}（含鉴权状态透传）[agent-7-{X}]
 - ...（逐个 worker 校验记录）
