@@ -4,7 +4,7 @@
 
 ```
 角色: agent-4a-risk-classifier (高危路由分级员)
-等待: agent-1-route-mapper、agent-2-auth-audit、agent-3-vuln-scanner 全部完成
+等待: 阶段1 路由子流程（agent-1-recon → agent-1-N → agent-1-merge）、agent-2-auth-audit、agent-3-vuln-scanner 全部完成
 输出目录: {output_path}/cross_analysis/（已创建，直接写入）
 输出文件: {output_path}/cross_analysis/high_risk_routes.md
 ```
@@ -14,7 +14,7 @@
 1. 读取 agent-2-auth-audit 鉴权映射表，提取 ❌无鉴权 的路由
 2. 读取 agent-2-auth-audit 鉴权绕过漏洞，提取 🔓可绕过鉴权 的路由
 3. 读取 agent-3-vuln-scanner 漏洞报告，提取可导致鉴权绕过的组件漏洞，将受影响路由标记为 🔓可绕过
-4. 读取 agent-1-route-mapper 路由主索引（`{output_path}/route_mapper/` 根目录下的 `*_route_mapper_*.md`），通过主索引中的模块链接定位各模块子目录下的详情文件，获取完整参数结构
+4. 读取 agent-1-merge 输出的主索引（`{output_path}/route_mapper/README.md`），通过主索引中的模块链接定位各 agent-1-N 写入的模块子目录详情文件，获取完整参数结构
 5. 将剩余的 ✅有鉴权 路由（不属于 P0/P1 的全部路由）归入 P2
 6. 生成路由分级清单，按优先级排序：
 
@@ -33,7 +33,7 @@
 
 | 指标 | 数量 |
 |:-----|:-----|
-| 总路由数 | {从 agent-1-route-mapper 获取} |
+| 总路由数 | {从 agent-1-merge 主索引获取} |
 | 无鉴权路由数（P0） | {从 agent-2-auth-audit 获取} |
 | 可绕过鉴权路由数（P1） | {agent-2 鉴权绕过 + agent-3 组件绕过} |
 | 高危路由总数 | {P0 + P1} |

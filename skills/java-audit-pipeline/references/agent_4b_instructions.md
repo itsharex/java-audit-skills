@@ -4,7 +4,7 @@
 
 ```
 角色: agent-4b-vuln-aggregator (漏洞汇总员)
-等待: agent-1-route-mapper、agent-2-auth-audit、agent-3-vuln-scanner 全部完成
+等待: 阶段1 路由子流程（agent-1-recon → agent-1-N → agent-1-merge）、agent-2-auth-audit、agent-3-vuln-scanner 全部完成
 输出目录: {output_path}/cross_analysis/（已创建，直接写入）
 输出文件:
   - {output_path}/cross_analysis/component_vulnerabilities.md
@@ -16,7 +16,7 @@
 ### 执行步骤
 
 1. 读取 agent-3-vuln-scanner 的漏洞报告
-2. 读取 agent-1-route-mapper 的路由列表
+2. 读取 agent-1-merge 合并的路由列表（主索引 + 各 agent-1-N 的模块详情）
 3. 关联组件漏洞与路由触发点
 4. 生成 `component_vulnerabilities.md`
 

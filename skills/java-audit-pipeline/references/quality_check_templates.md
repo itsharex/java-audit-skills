@@ -14,7 +14,9 @@
 
 - [通用报告结构](#通用报告结构)
 - [阶段1 校验清单](#阶段1-校验清单)
-  - [agent-1 route-mapper](#agent-1-route-mapper-校验清单)
+  - [agent-1-recon 路由侦查员](#agent-1-recon-校验清单)
+  - [agent-1-N route-mapper worker](#agent-1-n-route-mapper-worker-校验清单)
+  - [agent-1-merge 路由合并员](#agent-1-merge-校验清单)
   - [agent-2 auth-audit](#agent-2-auth-audit-校验清单)
   - [agent-3 vuln-scanner](#agent-3-vuln-scanner-校验清单)
 - [阶段2 校验清单](#阶段2-校验清单)
@@ -55,18 +57,65 @@
 
 ## 阶段1 校验清单
 
-### agent-1-route-mapper 校验清单
+### agent-1-recon 校验清单
+
+校验对象: `{output_path}/route_mapper/_recon_*.md` 任务分配单。无对应 skill，按 `java-audit-pipeline/SKILL.md` 中「侦查自检清单」校验。
+
+| # | 校验项 | 预期 | 实际 | 状态 |
+|---|--------|------|------|------|
+| 1 | 侦查单存在且非空 | `_recon_*.md` 存在，长度 > 0 | {填写：文件路径及大小} | {✅/❌} |
+| 2 | 锚点命令原始输出存在 | 含 `ls -1`、`find ... -name WEB-INF`（无 maxdepth）、`grep -rl '<packaging>war</packaging>'` 三段原样输出，未被改写 | {填写：是否包含三段原始输出} | {✅/❌} |
+| 3 | 第 1 层模块清单与 ls 全集一致 | 第 1 层表格行数 == `ls -1` 输出行数（一级子目录全集对账，diff 为空） | {填写：表行数} / {填写：ls 行数} | {✅/❌} |
+| 4 | SKIP 行均填 skip_reason | 所有 SKIP 类型的模块都有非空 `skip_reason` 字段 | {填写：SKIP 行数} / {填写：含 skip_reason 行数} | {✅/❌} |
+| 5 | WAR 模块完全分配 | 任务分配表的「处理模块」并集 == 全部 WAR/Web 模块（含 Maven `src/main/webapp` 形态、`<packaging>war</packaging>` 模块），无重复无遗漏 | {填写：分配并集 vs WAR 集合 diff} | {✅/❌} |
+| 6 | 通配符模块独占 | 含 Struts `*_*` / executeInterface / 路径变量等通配符的模块均独占 1 agent（无合并）；通配符上界估算的模块也按上界判定独占 | {填写：通配符模块数 / 独占 agent 数} | {✅/❌} |
+| 7 | 第 2 层下钻覆盖 | 所有第 1 层预估路由 > 50（含通配符上界估算）的物理模块都在第 2 层有逻辑模块拆分 | {填写：>50 模块数 / 已下钻模块数} | {✅/❌} |
+| 8 | agent_id 命名规范 | 全部为 `agent-1-{数字}` 格式，序号从 1 连续递增，无 `#`、`_` 等非法字符 | {填写：agent_id 列表} | {✅/❌} |
+| 9 | 单 agent 负载受限 | 每个 agent 预估路由总数 ≤ 80（含通配符独占除外） | {填写：超载 agent 列表} | {✅/❌} |
+| 10 | 总执行 agent 数已声明 | 侦查单末尾明确声明「总执行 agent 数: N」 | {填写：N 值} | {✅/❌} |
+| 11 | recon_id 唯一可追溯 | 文件名形如 `_recon_{YYYYMMDDHHMMSS}_{8位hex}.md`（精度到秒+随机后缀） | {填写：实际文件名} | {✅/❌} |
+| 12 | WebService 切分合规 | 所有 WS endpoint 作为独立逻辑模块分配，输出目录命名 `{war}_ws_{service}`；侦查单未预留共享 `webservice/` 目录 | {填写：WS endpoint 列表与 agent 归属} | {✅/❌} |
+
+---
+
+### agent-1-N route-mapper worker 校验清单
 
 校验前先使用 Skill 工具加载 `/java-route-mapper`，从 skill 上下文中提取输出规范。
 
 | # | 校验项 | 预期 | 实际 | 状态 |
 |---|--------|------|------|------|
-| 1 | 主索引文件及详情文件存在且非空 | 主索引存在，且各模块子目录/webservice 子目录下的详情文件存在并非空 | {填写文件路径及大小} | {✅/❌} |
-| 2 | 主索引模块索引 + 详情文件路由列表 | 主索引含模块索引表和 Web Service 索引表，各详情文件含完整路由列表 | {填写：表格是否存在，行数} | {✅/❌} |
-| 3 | 参数结构覆盖 | 各模块详情文件中的每个路由都标注参数名、类型、来源（@RequestParam/@PathVariable/@RequestBody 等） | {填写：是否覆盖所有路由的参数} | {✅/❌} |
-| 4 | Content-Type 标注 | 各模块详情文件中的每个路由都标注 Content-Type | {填写：是否覆盖所有路由的 Content-Type} | {✅/❌} |
-| 5 | 源文件位置标注 | 各详情文件中的每个路由都含 Java 源文件路径 + 行号 | {填写：是否每个路由都有文件位置} | {✅/❌} |
-| 6 | 输出模板合规性 | 主索引和各详情文件结构符合 OUTPUT_TEMPLATE_INDEX.md + OUTPUT_TEMPLATE_MODULE.md，链接为子目录相对路径，无残留【填写】占位符 | {填写：章节是否齐全，有无残留占位符} | {✅/❌} |
+| 1 | 模块输出目录存在且非空 | `route_mapper/{module_name}/` 存在，含至少 1 份详情文件 | {填写：目录路径与文件数} | {✅/❌} |
+| 2 | 状态文件存在 | `.status/agent-1-{N}.json` 存在 | {填写：文件路径} | {✅/❌} |
+| 3 | 状态文件 schema 完整 | 含 schema_version=1、agent_id、recon_id、status、attempt、actual_route_count、estimated_route_count、output_file_sha256；status="success"；数字字段为 JSON number（禁止 "200+"） | {填写：缺失字段列表 + status 值} | {✅/❌} |
+| 4 | 输出隔离 | 仅写自己模块子目录与 `decompiled/agent-1-{N}/`；未写其他模块子目录、共享 `webservice/` 或主索引根 | {填写：实际写入路径列表} | {✅/❌} |
+| 5 | 接口块格式 | 详情文件中 `grep -c "^=== \[" {report}` ≥ status JSON 中 `actual_route_count` × 80% | {填写：接口块数 / actual_route_count} | {✅/❌} |
+| 6 | 通配符强制展开 | Struts `*_*`、Spring 路径变量、JAX-RS `@PathParam`、Servlet url-pattern 通配均已穷举/展开 | {填写：每类通配符的处理结果} | {✅/❌} |
+| 7 | 参数结构覆盖 | 每个路由都标注参数名、类型、来源（@RequestParam/@PathVariable/@RequestBody 等） | {填写：是否覆盖所有路由} | {✅/❌} |
+| 8 | Content-Type 标注 | 每个路由都标注 Content-Type | {填写：是否覆盖所有路由} | {✅/❌} |
+| 9 | 源文件位置标注 | 每个路由含 Java 源文件路径 + 行号（反编译产物用 .class 路径） | {填写：是否覆盖所有路由} | {✅/❌} |
+| 10 | 省略词零容忍 | 输出中无 "..."、"等"、"其他"、"主要"、"潜在"、"+" 数量后缀等省略词 | {填写：grep 结果，0 matches 为通过} | {✅/❌} |
+| 11 | 输出模板合规性 | 详情文件结构符合 OUTPUT_TEMPLATE_MODULE.md，无残留【填写】占位符；**未生成项目级 README/INDEX**（主索引由 merge 负责） | {填写：章节是否齐全 + README 是否未越权生成} | {✅/❌} |
+| 12 | 路由数未超载 | actual_route_count ≤ estimated_route_count × 1.5 或 ≤ 100；超载时 status="overflow" 并触发重新拆分 | {填写：actual / estimated 比值} | {✅/❌} |
+| 13 | recon_id 一致性 | status JSON 中 recon_id 等于负责人本轮选取的最新侦查单 ID | {填写：recon_id 值} | {✅/❌} |
+
+---
+
+### agent-1-merge 校验清单
+
+校验对象: `{output_path}/route_mapper/README.md` 主索引。校验前使用 Skill 工具加载 `/java-route-mapper`，对照 `OUTPUT_TEMPLATE_INDEX.md`。
+
+| # | 校验项 | 预期 | 实际 | 状态 |
+|---|--------|------|------|------|
+| 1 | 主索引文件存在且非空 | `route_mapper/README.md` 存在，长度 > 0 | {填写：文件路径及大小} | {✅/❌} |
+| 2 | 仅使用最新侦查单 | 选取的 `_recon_*.md` 是按时间字段排序的最新一份；与所有 worker `.status/*.json` 的 recon_id 一致 | {填写：选取文件名 + worker recon_id 列表} | {✅/❌} |
+| 3 | 与侦查单 diff 为空 | 侦查单分配的所有 agent_id 都有对应 .status JSON 且对应模块子目录非空；所有 status="success" | {填写：缺失/失败列表，应为 0} | {✅/❌} |
+| 4 | 模块清单与侦查单一致 | 主索引模块清单 == 侦查单第 1 层（含 SKIP 模块及 skip_reason） | {填写：行数与 diff} | {✅/❌} |
+| 5 | 跨模块路由总数 | 主索引声明的总数 == 各模块 .status JSON 的 actual_route_count 之和 | {填写：声明值 / 求和值} | {✅/❌} |
+| 6 | output_file_sha256 校验 | 各 worker 实际输出文件的 sha256 与 .status JSON 中记录一致（防止读到旧重跑结果） | {填写：不一致文件数，应为 0} | {✅/❌} |
+| 7 | 详情链接有效 | 每个模块的链接为子目录相对路径且文件实际存在 | {填写：失效链接数，应为 0} | {✅/❌} |
+| 8 | WebService 索引（如有） | 聚合各 `*_ws_*` worker 子目录链接（不创建共享 webservice/ 目录） | {填写：WS 模块数与索引情况} | {✅/❌} |
+| 9 | 实际 vs 预估对账表 | 偏差 > 50% 的模块均附说明 | {填写：偏差超 50% 的模块数 / 已附说明数} | {✅/❌} |
+| 10 | 模板合规性 | 符合 OUTPUT_TEMPLATE_INDEX.md 章节顺序，无残留【填写】占位符；merge 未改写任何 worker 产物文件 | {填写：章节是否齐全 + worker 产物未被改动} | {✅/❌} |
 
 ---
 
@@ -79,7 +128,7 @@
 | 1 | 输出文件存在且非空 | 文件存在，内容长度 > 0 | {填写文件路径及大小} | {✅/❌} |
 | 2 | 鉴权框架识别 | 明确识别鉴权框架类型（Shiro/Spring Security/JWT/Filter/自定义等） | {填写：识别出的框架类型} | {✅/❌} |
 | 3 | 组件版本检查 | 鉴权相关组件的版本号及已知漏洞 | {填写：是否包含版本信息} | {✅/❌} |
-| 4 | 路由鉴权映射表 | 表格含 ✅/⚠️/❌ 状态标记，覆盖 agent-1 输出的路由 | {填写：映射表行数} | {✅/❌} |
+| 4 | 路由鉴权映射表 | 表格含 ✅/⚠️/❌ 状态标记，覆盖 agent-1-merge 主索引中的路由 | {填写：映射表行数} | {✅/❌} |
 | 5 | 风险统计章节 | 包含无鉴权路由数、弱鉴权路由数、风险占比 | {填写：统计数据是否完整} | {✅/❌} |
 | 6 | 高危详情 + PoC | 每个高危项有详细说明和验证步骤 | {填写：高危项数量及 PoC 有无} | {✅/❌} |
 | 7 | 输出模板合规性 | 三个文件结构分别符合 OUTPUT_TEMPLATE_MAIN/MAPPING/README.md，无残留【填写】占位符 | {填写：三个文件章节是否齐全} | {✅/❌} |
@@ -88,7 +137,7 @@
 
 | 指标 | 实际值 | 阈值 | 状态 |
 |------|--------|------|------|
-| 路由鉴权映射覆盖率 | {填写：映射表路由数} / {填写：agent-1 路由总数} = {填写}% | >= 80% | {✅/❌} |
+| 路由鉴权映射覆盖率 | {填写：映射表路由数} / {填写：agent-1-merge 主索引路由总数} = {填写}% | >= 80% | {✅/❌} |
 
 ---
 
@@ -204,7 +253,11 @@
 ## 各阶段校验详情
 
 ### 阶段1
-- {✅/❌→✅} java-route-mapper: {M}/{N} 项通过
+- {✅/❌→✅} agent-1-recon: 任务分配单 校验{通过/不通过}（{N} 个执行 agent，{M} 个 SKIP 模块）
+- {✅/❌→✅} agent-1-1: java-route-mapper 校验{通过/不通过}（模块 {module_name}） [agent-7-{X}]
+- {✅/❌→✅} agent-1-2: java-route-mapper 校验{通过/不通过}（模块 {module_name}） [agent-7-{X}]
+- ...（逐个 worker 校验记录）
+- {✅/❌→✅} agent-1-merge: 主索引 README 校验{通过/不通过}（与侦查单 diff 为空）
 - {✅/❌→✅} java-auth-audit: {M}/{N} 项通过（重做{X}次）
 - {✅/❌→✅} java-vuln-scanner: {M}/{N} 项通过
 
