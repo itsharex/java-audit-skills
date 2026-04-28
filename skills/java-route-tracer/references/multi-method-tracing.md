@@ -187,7 +187,7 @@ myproject_audit/route_tracer/myproject_trace_getDetailQuery_20260204.md
 **内容示例**:
 
 ```markdown
-# /api/ws/vehicleQuery Web Service 所有方法追踪索引
+# /api/ws/userQuery Web Service 所有方法追踪索引
 
 生成时间: 2026-02-04
 

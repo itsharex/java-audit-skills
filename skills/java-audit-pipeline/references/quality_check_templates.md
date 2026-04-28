@@ -92,6 +92,7 @@
 | 4 | 输出隔离 | 仅写自己模块子目录与 `decompiled/agent-1-{N}/`；未写其他模块子目录、共享 `webservice/` 或主索引根 | {填写：实际写入路径列表} | {✅/❌} |
 | 5 | 接口块格式 | 详情文件中 `grep -c "^=== \[" {report}` ≥ status JSON 中 `actual_route_count` × 80% | {填写：接口块数 / actual_route_count} | {✅/❌} |
 | 6 | 通配符强制展开 | Struts `*_*`、Spring 路径变量、JAX-RS `@PathParam`、Servlet url-pattern 通配均已穷举/展开 | {填写：每类通配符的处理结果} | {✅/❌} |
+| 6b | 网关方法 sub_function 展开 | 识别到 dispatch 模式方法（如 `executeInterface(String code, String json)`、`dispatch(String action, …)`、方法体含 `switch(code)`/字符串 if-else 链/`Map<String,Handler>` 路由）必须穷举每个 sub_function 为独立 `=== [N] ===` 接口块；状态 JSON 含 `sub_functions` 数组且 `actual_route_count` 计入每个分支 | {填写：网关方法列表 / 已展开 sub_function 数} | {✅/❌} |
 | 7 | 参数结构覆盖 | 每个路由都标注参数名、类型、来源（@RequestParam/@PathVariable/@RequestBody 等） | {填写：是否覆盖所有路由} | {✅/❌} |
 | 8 | Content-Type 标注 | 每个路由都标注 Content-Type | {填写：是否覆盖所有路由} | {✅/❌} |
 | 9 | 源文件位置标注 | 每个路由含 Java 源文件路径 + 行号（反编译产物用 .class 路径） | {填写：是否覆盖所有路由} | {✅/❌} |
