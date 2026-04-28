@@ -632,7 +632,7 @@ java-sql-audit                    java-route-tracer
 
 **路由名说明：**
 - 路由名从路由路径提取，去掉前缀斜杠和特殊字符
-- 例如：`/itc/ws/carQuery` → `itc_ws_carQuery`
+- 例如：`/biz/ws/userService` → `biz_ws_userService`
 - 例如：`/api/user/login.action` → `api_user_login`
 
 ---
