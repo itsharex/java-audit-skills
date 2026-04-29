@@ -42,13 +42,31 @@
 位置: 【填写：ClassName.method (源文件路径:行号)】
 HTTP 方法: 【填写：GET / POST / PUT / DELETE】
 URL 路径: 【填写：完整 URL 路径】
-Content-Type: 【填写：如 application/x-www-form-urlencoded / application/json / text/xml】
 
-参数结构:
-  【填写：按 Path / Query / Body / Header / Cookie 分类列出所有参数及其类型】
+参数: 【填写：紧凑单行格式，如 "Path: id:Long | Query: page:int, size:int | Body: name:String, email:String"；无参数填 "无"】
+
+<!-- 仅在以下情形必填，否则省略整行（节省 token）：
+     - Content-Type 仅在 multipart/form-data（文件上传）或 text/xml（SOAP）时填写
+     - Header 仅在涉及自定义鉴权头（X-Auth-Token 等）且无标准 Authorization 时填写 -->
+【填写：Content-Type（仅文件上传/SOAP）】
+【填写：Header（仅自定义鉴权头）】
 
 <!-- 重复区块结束 -->
 <!-- 如有多个 namespace 或框架类型，重复上述分组结构 -->
+
+<!-- 通配符模式族特殊格式：每个通配符 namespace 只写一次模式族头部 + URL列表，参考 SKILL.md CRITICAL 1.1 -->
+=== Pattern: 【填写：通配符模板，如 {action}_{method}.action】 (namespace: 【填写】) ===
+入口模板: 【填写：如 {ActionClass}.{methodName}()】
+HTTP 方法: 【填写】
+Content-Type: 【填写（仅 form/json/xml 区分必要时）】
+参数来源: 各 Action 类字段（下游 agent-5 反编译提取）
+
+展开实例（共 【N】 个）:
+- 【URL】 → 【ClassName.methodName()】
+- 【URL】 → 【ClassName.methodName()】
+<!-- 逐行列出全部 N 个，禁止省略，禁止 "..." / "等" -->
+
+<!-- 通配符模式族区块结束 -->
 
 ---
 
@@ -69,9 +87,11 @@ Content-Type: 【填写：如 application/x-www-form-urlencoded / application/js
 
 - [ ] 文件名符合命名规则
 - [ ] 所有【填写】占位符已替换为实际内容
-- [ ] 该模块下所有接口都已列出，无遗漏
-- [ ] 每个接口都有完整的参数结构（按 Path/Query/Body/Header/Cookie 分类）
+- [ ] 该模块下所有接口都已列出，无遗漏（普通路由 + 通配符模式族实例列表）
+- [ ] 每个接口都有紧凑参数行（按 Path/Query/Body 分类，紧凑单行格式）
 - [ ] 每个接口都有位置信息（ClassName.method + 文件路径 + 行号）
+- [ ] Content-Type 仅在文件上传/SOAP 时出现，普通 form/json 接口不写
+- [ ] 通配符 namespace 使用「模式族 + URL 列表」格式，未对每个展开 URL 重复完整模板
 - [ ] Web Service 接口的 URL 来自配置文件的 address 属性（非推断）
-- [ ] "3. 模块统计"的数字与实际列出的接口数一致
+- [ ] "3. 模块统计"的数字与实际列出的接口数一致（含模式族实例数）
 - [ ] 章节数量为 3 个，顺序与模板一致
